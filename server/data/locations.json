@@ -1,0 +1,26 @@
+[
+  {
+    "id": "location-1774236996077",
+    "name": "Research Test",
+    "latitude": 7.904,
+    "longitude": 125.0877,
+    "description": "Research ",
+    "researchers": [
+      "Maki Desu ",
+      "John Doe"
+    ],
+    "radiusKm": 15
+  },
+  {
+    "id": "location-1774237163574",
+    "name": "Ester Hospital",
+    "latitude": 7.8983,
+    "longitude": 125.0882,
+    "description": "Title of Research",
+    "researchers": [
+      "Test",
+      "test"
+    ],
+    "radiusKm": 1
+  }
+]

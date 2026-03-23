@@ -1,0 +1,66 @@
+.map-picker-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.map-picker-header {
+  padding: 16px;
+  background: #f9f9f9;
+  border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.map-picker-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.coordinates-display {
+  display: flex;
+  gap: 16px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.coordinates-display p {
+  margin: 0;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.coordinates-display span {
+  font-family: 'Courier New', monospace;
+  color: #8B0000;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.marker-pin {
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.map-picker-instructions {
+  padding: 12px 16px;
+  background: #e8f5e9;
+  border-top: 1px solid #c8e6c9;
+  color: #2e7d32;
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.map-picker-instructions p {
+  margin: 0;
+  font-weight: 500;
+}
