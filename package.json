@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "node server/production.js",
     "dev:server": "cd server && npm run dev",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
+    "postinstall": "npm --prefix server install",
     "build": "tsc -b && vite build",
+    "build:frontend": "tsc -b && vite build",
     "server:install": "cd server && npm install",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"

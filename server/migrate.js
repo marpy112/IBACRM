@@ -7,7 +7,7 @@
  * and imports them into MongoDB. It skips duplicates.
  */
 
-require('dotenv').config();
+require('./loadEnv');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');

@@ -2,6 +2,24 @@
 
 # Mindanao Research Map - Deployment Guide for Hostinger VPS
 
+## Frontend-only deployment to Hostinger
+
+If you are deploying only the React frontend to Hostinger hosting:
+
+1. Set the frontend environment variables in the root `.env`:
+   ```env
+   VITE_MAPBOX_TOKEN=pk.your_token_here
+   VITE_API_BASE_URL=https://your-api-domain.com/api
+   ```
+2. Build the frontend:
+   ```bash
+   npm run build:frontend
+   ```
+3. Upload the contents of `dist/` to `public_html/`.
+4. Make sure the uploaded files include `.htaccess`.
+
+The `.htaccess` file is required so React Router routes like `/admin` still work when refreshed directly on Hostinger.
+
 ## Prerequisites
 You need:
 - Node.js 18+ installed on VPS
@@ -18,7 +36,6 @@ You need:
 │   ├── index-simple.js
 │   ├── models/
 │   ├── package.json
-│   ├── .env
 │   └── node_modules/
 ├── dist/                     (frontend files - built React app)
 └── start.sh                 (startup script)
@@ -40,7 +57,7 @@ scp -r dist/* user@hostinger_ip:/home/username/mindanao-research/dist/
 SSH into your VPS:
 ```bash
 ssh user@hostinger_ip
-cd /home/username/mindanao-research/server
+cd /home/username/mindanao-research
 ```
 
 Create `.env` file:
@@ -53,6 +70,9 @@ Add:
 MONGODB_URI=mongodb+srv://marpy09:marpafamily1131@cluster0.cwd0mqp.mongodb.net/mindanao-research?retryWrites=true&w=majority
 PORT=3001
 NODE_ENV=production
+VITE_MAPBOX_TOKEN=pk.your_token_here
+VITE_API_BASE_URL=/api
+CORS_ORIGINS=https://your-domain.com
 ```
 
 Save with Ctrl+O, Enter, Ctrl+X
@@ -130,20 +150,11 @@ sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d your-domain.com
 ```
 
-## Step 8: Update Frontend API Configuration
+## Step 8: Rebuild Frontend
 
-Before deploying, update your frontend API calls to use production URL:
-
-In `src/services/api.ts` or similar:
-```typescript
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-domain.com/api'
-  : 'http://localhost:3001/api';
-```
-
-Then rebuild:
+After updating `.env`, rebuild:
 ```bash
-npm run build
+npm run build:frontend
 ```
 
 ## Troubleshooting

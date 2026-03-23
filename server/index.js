@@ -1,8 +1,8 @@
-require('dotenv').config();
+require('./loadEnv');
 console.log('🔄 Server starting...');
 const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
+const { createCorsMiddleware } = require('./corsConfig');
 
 const Admin = require('./models/Admin');
 const Location = require('./models/Location');
@@ -14,7 +14,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 console.log('📦 Modules loaded');
 
 // Middleware
-app.use(cors());
+app.use(createCorsMiddleware());
 app.use(express.json());
 
 // MongoDB Connection

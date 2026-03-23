@@ -1,14 +1,14 @@
-require('dotenv').config();
+require('./loadEnv');
 const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
+const { createCorsMiddleware } = require('./corsConfig');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // Middleware  
-app.use(cors());
+app.use(createCorsMiddleware());
 app.use(express.json());
 
 let isConnected = false;

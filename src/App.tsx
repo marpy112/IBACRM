@@ -48,7 +48,7 @@ function MapView() {
             <li>Sign up or log in to your account</li>
             <li>Navigate to your API access tokens page</li>
             <li>Copy your default public token</li>
-            <li>Create a <code>.env.local</code> file in the project root with:
+            <li>Create a <code>.env</code> or <code>.env.local</code> file in the project root with:
               <pre>VITE_MAPBOX_TOKEN=your_token_here</pre>
             </li>
             <li>Restart the development server</li>

@@ -27,7 +27,7 @@
 4. Copy the connection string
 
 ### Step 5: Configure .env
-Replace in `server/.env`:
+Replace in the root `.env`:
 ```
 MONGODB_URI=mongodb+srv://yourUsername:yourPassword@clustername.mongodb.net/mindanao-research?retryWrites=true&w=majority
 ```
@@ -65,7 +65,7 @@ If you prefer local MongoDB:
 ## Troubleshooting
 
 **"MONGODB_URI not defined"**
-→ Create `server/.env` file with your connection string
+→ Create the root `.env` file with your connection string
 
 **"Connection timeout"**
 → Check your MongoDB Atlas IP whitelist (add 0.0.0.0/0 for development)

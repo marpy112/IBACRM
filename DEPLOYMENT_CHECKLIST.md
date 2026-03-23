@@ -36,10 +36,13 @@ scp -r dist/* user@your-vps-ip:/home/username/mindanao-research/dist/
 ```bash
 cd /home/username/mindanao-research/server
 
-# Create .env
+# Create shared root .env
+cd /home/username/mindanao-research
 echo 'MONGODB_URI=mongodb+srv://marpy09:marpafamily1131@cluster0.cwd0mqp.mongodb.net/mindanao-research?retryWrites=true&w=majority' > .env
 echo 'PORT=3001' >> .env
 echo 'NODE_ENV=production' >> .env
+echo 'VITE_MAPBOX_TOKEN=pk.your_token_here' >> .env
+echo 'VITE_API_BASE_URL=/api' >> .env
 
 # Install dependencies
 npm install --production
@@ -109,7 +112,7 @@ sudo certbot --nginx -d your-domain.com
 - ✅ `dist/` folder (React build output)
 
 **Environment setup:**
-- ✅ `.env` file (MongoDB URI, PORT)
+- ✅ Root `.env` file (MongoDB URI, PORT, Vite variables)
 
 ---
 

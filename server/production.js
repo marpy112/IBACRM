@@ -1,39 +1,45 @@
-require('dotenv').config();
+require('./loadEnv');
 const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
+const fs = require('fs');
 const path = require('path');
+const { createCorsMiddleware } = require('./corsConfig');
 
 const Admin = require('./models/Admin');
 const Location = require('./models/Location');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const HOST = '0.0.0.0';
 const MONGODB_URI = process.env.MONGODB_URI;
+const distDir = path.join(__dirname, '../dist');
+const indexHtmlPath = path.join(distDir, 'index.html');
+const hasFrontendBuild = fs.existsSync(indexHtmlPath);
 
-// Middleware  
-app.use(cors());
+app.use(createCorsMiddleware());
 app.use(express.json());
 
 let isConnected = false;
 
-// Try to connect to MongoDB
 if (MONGODB_URI) {
-  mongoose.connect(MONGODB_URI, {
-    serverSelectionTimeoutMS: 5000,
-  }).then(() => {
-    isConnected = true;
-    console.log('✅ Connected to MongoDB');
-  }).catch((err) => {
-    console.warn('⚠️  MongoDB connection failed:', err.message);
-    console.log('Server will work in read-only mode');
-  });
+  mongoose
+    .connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+    })
+    .then(() => {
+      isConnected = true;
+      console.log('Connected to MongoDB');
+    })
+    .catch((err) => {
+      console.warn('MongoDB connection failed:', err.message);
+      console.log('Server will continue without a database connection');
+    });
 }
 
-// Serve frontend static files (React dist folder)
-app.use(express.static(path.join(__dirname, '../dist')));
+if (hasFrontendBuild) {
+  app.use(express.static(distDir));
+}
 
-// ============ AUTH ROUTES ============
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -48,13 +54,13 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    res.json({
+    return res.json({
       success: true,
       email: admin.email,
       message: 'Login successful',
     });
   } catch (error) {
-    res.status(500).json({ error: 'Login failed: ' + error.message });
+    return res.status(500).json({ error: 'Login failed: ' + error.message });
   }
 });
 
@@ -81,23 +87,22 @@ app.post('/api/auth/signup', async (req, res) => {
 
     const newAdmin = await Admin.create({ email, password });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       email: newAdmin.email,
       message: 'Account created successfully',
     });
   } catch (error) {
-    res.status(500).json({ error: 'Signup failed: ' + error.message });
+    return res.status(500).json({ error: 'Signup failed: ' + error.message });
   }
 });
 
-// ============ LOCATION ROUTES ============
 app.get('/api/locations', async (req, res) => {
   try {
     const locations = await Location.find();
-    res.json({ success: true, locations });
+    return res.json({ success: true, locations });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch locations: ' + error.message });
+    return res.status(500).json({ error: 'Failed to fetch locations: ' + error.message });
   }
 });
 
@@ -113,7 +118,7 @@ app.post('/api/locations', async (req, res) => {
     const lng = parseFloat(longitude);
     const radius = parseFloat(radiusKm || 15);
 
-    if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
+    if (Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(radius)) {
       return res.status(400).json({ error: 'Invalid coordinate or radius values' });
     }
 
@@ -131,13 +136,13 @@ app.post('/api/locations', async (req, res) => {
       radiusKm: radius,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       location: newLocation,
       message: 'Location added successfully',
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to add location: ' + error.message });
+    return res.status(500).json({ error: 'Failed to add location: ' + error.message });
   }
 });
 
@@ -150,41 +155,37 @@ app.delete('/api/locations/:id', async (req, res) => {
       return res.status(404).json({ error: 'Location not found' });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Location deleted successfully',
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete location: ' + error.message });
+    return res.status(500).json({ error: 'Failed to delete location: ' + error.message });
   }
 });
 
-// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', mongodb: isConnected, timestamp: new Date() });
+  res.json({
+    status: 'OK',
+    mongodb: isConnected,
+    frontend: hasFrontendBuild,
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Serve React app for all other routes (SPA)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
+if (hasFrontendBuild) {
+  app.get('*', (req, res) => {
+    res.sendFile(indexHtmlPath);
+  });
+}
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n🚀 Backend server running on http://localhost:${PORT}`);
-  console.log(`📊 Database: ${isConnected ? '✅ MongoDB Connected' : '⚠️  MongoDB Offline'}`);
-  console.log(`📁 Frontend: Served from dist/`);
-  console.log('\n✅ Available endpoints:');
-  console.log('   POST   /api/auth/login');
-  console.log('   POST   /api/auth/signup');
-  console.log('   GET    /api/locations');
-  console.log('   POST   /api/locations');
-  console.log('   DELETE /api/locations/:id');
-  console.log('   GET    /api/health\n');
+app.listen(PORT, HOST, () => {
+  console.log(`Backend server running on http://${HOST}:${PORT}`);
+  console.log(`Database status: ${isConnected ? 'connected' : 'offline'}`);
+  console.log(`Frontend status: ${hasFrontendBuild ? 'serving dist build' : 'backend only'}`);
 });

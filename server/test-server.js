@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('./loadEnv');
 console.log('✅ dotenv loaded');
 
 const express = require('express');

@@ -42,7 +42,7 @@ npm install
 2. Sign up or log in
 3. Navigate to [Tokens page](https://account.mapbox.com/tokens/)
 4. Copy your **default public token**
-5. Create `.env.local` in the project root:
+5. Create `.env` or `.env.local` in the project root:
    ```
    VITE_MAPBOX_TOKEN=pk.your_token_here
    ```
@@ -141,9 +141,19 @@ const [viewState] = React.useState({
 ## Environment Variables
 
 ```env
-# .env.local
+# .env or .env.local
 VITE_MAPBOX_TOKEN=pk.your_token_here  # Required: Your Mapbox public token
 ```
+
+## Hostinger Frontend Deployment
+
+If you are uploading the React app to Hostinger static hosting:
+
+```bash
+npm run build:frontend
+```
+
+Then upload the contents of `dist/` to your `public_html/` folder. Keep the generated `.htaccess` file so React Router routes continue to work after page refreshes.
 
 ## Commands
 
