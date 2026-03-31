@@ -5,10 +5,11 @@ import { Header } from './components/Header'
 import { MapContainer } from './components/MapContainer'
 import { LocationPanel } from './components/LocationPanel'
 import Login from './components/Login'
-import AdminDashboard, { ResearchLocation } from './components/AdminDashboard'
+import AdminDashboard from './components/AdminDashboard'
 import { fetchLocations } from './services/api'
 import { LoadingScreen } from './components/LoadingScreen'
 import { MINDANAO_RESEARCH_LOCATIONS } from './data/mindanaoLocations'
+import type { ResearchLocation } from './types/research'
 
 function AppContent() {
   const [isReady, setIsReady] = useState(false)
@@ -190,7 +191,10 @@ function AdminPage() {
   }
 
   const handleAddLocation = (location: ResearchLocation) => {
-    setLocations([...locations, location])
+    setLocations((prev) => {
+      const next = prev.filter((item) => item.id !== location.id)
+      return [...next, location]
+    })
   }
 
   const handleDeleteLocation = (id: string) => {

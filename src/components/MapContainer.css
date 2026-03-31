@@ -5,6 +5,72 @@
   overflow: hidden;
 }
 
+.map-search-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  width: min(360px, calc(100vw - 32px));
+}
+
+.map-search-input {
+  width: 100%;
+  border: 1px solid rgba(92, 0, 0, 0.2);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 30px rgba(44, 24, 24, 0.18);
+  font-size: 0.95rem;
+}
+
+.map-search-input:focus {
+  outline: none;
+  border-color: #8b0000;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.12), 0 14px 30px rgba(44, 24, 24, 0.18);
+}
+
+.map-search-results {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 14px;
+  box-shadow: 0 18px 36px rgba(44, 24, 24, 0.22);
+  overflow: hidden;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.map-search-result {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.map-search-result:hover {
+  background: #fff4f1;
+}
+
+.map-search-result span {
+  color: #341414;
+  font-weight: 600;
+}
+
+.map-search-result small {
+  color: #7a5555;
+}
+
+.map-search-empty {
+  margin: 0;
+  padding: 14px;
+  color: #7a5555;
+}
+
 /* Navigation Controls Styling */
 .mapboxgl-ctrl-group {
   background-color: white;
@@ -95,18 +161,61 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.marker-location-label {
+  background: rgba(255, 255, 255, 0.95);
+  color: #4f1d1d;
+  border: 1px solid rgba(139, 0, 0, 0.22);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 8px 16px rgba(52, 20, 20, 0.18);
 }
 
 .marker-icon {
-  font-size: 2em;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+  font-weight: 700;
+  color: white;
+  background: radial-gradient(circle at 30% 30%, #cf4c2c, #8b0000 70%);
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
   animation: bounce 2s infinite;
   transition: transform 0.3s ease;
 }
 
 .marker-selected .marker-icon {
-  font-size: 2.5em;
+  transform: scale(1.15);
   animation: pulse 0.6s ease-in-out;
+}
+
+.marker-count {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #fff4f1;
+  color: #8b0000;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 1px solid rgba(139, 0, 0, 0.22);
 }
 
 @keyframes bounce {
@@ -145,6 +254,94 @@
   line-height: 1.4;
 }
 
+.popup-summary {
+  color: #8b0000;
+  font-weight: 600;
+}
+
+.clear-highlight-button {
+  border: none;
+  background: #fff4f1;
+  color: #8b0000;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.clear-highlight-button:hover {
+  background: #ffe7e2;
+}
+
+.popup-research-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-slider-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.popup-slider-button {
+  border: none;
+  background: #fff4f1;
+  color: #8b0000;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup-slider-button:hover {
+  background: #ffe7e2;
+}
+
+.popup-slider-count {
+  color: #7a5555;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.popup-research-card {
+  padding-top: 4px;
+}
+
+.popup-research-card h4 {
+  margin: 0 0 6px;
+  color: #4f1d1d;
+  font-size: 1rem;
+}
+
+.popup-research-title {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #4f1d1d;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.popup-research-title:hover {
+  color: #8b0000;
+  text-decoration: underline;
+}
+
+.linked-location-note {
+  margin: 10px 0 0;
+  color: #8b0000;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .researchers {
   margin-top: 10px;
   border-top: 1px solid #ddd;
@@ -167,5 +364,13 @@
 
 .researchers li {
   margin: 3px 0;
+}
+
+@media (max-width: 768px) {
+  .map-search-panel {
+    top: 12px;
+    left: 12px;
+    width: calc(100vw - 24px);
+  }
 }
 

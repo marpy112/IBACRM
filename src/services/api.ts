@@ -1,3 +1,5 @@
+import type { ResearchLocation, ResearcherEntry } from '../types/research';
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ||
   (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
@@ -119,16 +121,13 @@ export async function fetchLocations() {
   }
 
   const data = await response.json();
-  return data.locations;
+  return data.locations as ResearchLocation[];
 }
 
 export async function addLocation(locationData: {
   name: string;
   latitude: number;
   longitude: number;
-  description: string;
-  researcher1: string;
-  researcher2?: string;
   radiusKm: number;
 }) {
   const response = await fetch(`${API_BASE_URL}/locations`, {
@@ -140,6 +139,31 @@ export async function addLocation(locationData: {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to add location');
+  }
+
+  return await response.json();
+}
+
+export async function addResearchToLocations(
+  locationIds: string[],
+  researchData: {
+    title: string;
+    description: string;
+    researchers: ResearcherEntry[];
+  }
+) {
+  const response = await fetch(`${API_BASE_URL}/locations/researches`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...researchData,
+      locationIds,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to add research');
   }
 
   return await response.json();

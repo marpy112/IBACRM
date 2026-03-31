@@ -7,6 +7,7 @@ const { createCorsMiddleware } = require('./corsConfig');
 
 const Admin = require('./models/Admin');
 const Location = require('./models/Location');
+const { buildResearchEntry, normalizeLocation, slugify } = require('./locationUtils');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,6 +21,10 @@ app.use(createCorsMiddleware());
 app.use(express.json());
 
 let isConnected = false;
+
+function escapeRegex(value = '') {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 if (MONGODB_URI) {
   mongoose
@@ -100,7 +105,7 @@ app.post('/api/auth/signup', async (req, res) => {
 app.get('/api/locations', async (req, res) => {
   try {
     const locations = await Location.find();
-    return res.json({ success: true, locations });
+    return res.json({ success: true, locations: locations.map(normalizeLocation) });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch locations: ' + error.message });
   }
@@ -108,9 +113,9 @@ app.get('/api/locations', async (req, res) => {
 
 app.post('/api/locations', async (req, res) => {
   try {
-    const { name, latitude, longitude, description, researcher1, researcher2, radiusKm } = req.body;
+    const { name, latitude, longitude, radiusKm } = req.body;
 
-    if (!name || latitude === undefined || longitude === undefined || !description || !researcher1) {
+    if (!name || latitude === undefined || longitude === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -126,23 +131,87 @@ app.post('/api/locations', async (req, res) => {
       return res.status(400).json({ error: 'Invalid latitude or longitude' });
     }
 
-    const newLocation = await Location.create({
-      id: `location-${Date.now()}`,
-      name,
+    const trimmedName = String(name).trim();
+    const existingLocation = await Location.findOne({
+      name: { $regex: `^${escapeRegex(trimmedName)}$`, $options: 'i' },
+    });
+
+    if (existingLocation) {
+      return res.status(400).json({ error: 'Location already exists' });
+    }
+
+    const savedLocation = await Location.create({
+      id: `${slugify(trimmedName) || 'location'}-${Date.now()}`,
+      name: trimmedName,
       latitude: lat,
       longitude: lng,
-      description,
-      researchers: [researcher1, ...(researcher2 ? [researcher2] : [])],
       radiusKm: radius,
+      researches: [],
+      description: '',
+      researchers: [],
     });
 
     return res.status(201).json({
       success: true,
-      location: newLocation,
+      location: normalizeLocation(savedLocation),
       message: 'Location added successfully',
     });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to add location: ' + error.message });
+  }
+});
+
+app.post('/api/locations/researches', async (req, res) => {
+  try {
+    const { title, description, researchers, locationIds } = req.body;
+
+    if (!title || !description || !Array.isArray(researchers) || !Array.isArray(locationIds)) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const cleanedResearchers = researchers
+      .map((item) => ({
+        name: String(item?.name || '').trim(),
+        degree: String(item?.degree || '').trim(),
+      }))
+      .filter((item) => item.name);
+    const cleanedLocationIds = locationIds.map((item) => String(item).trim()).filter(Boolean);
+
+    if (cleanedResearchers.length === 0 || cleanedLocationIds.length === 0) {
+      return res.status(400).json({ error: 'At least one researcher and one location are required' });
+    }
+
+    const locations = await Location.find({ id: { $in: cleanedLocationIds } });
+    if (locations.length !== cleanedLocationIds.length) {
+      return res.status(404).json({ error: 'One or more locations were not found' });
+    }
+
+    const researchEntry = buildResearchEntry({
+      title,
+      description,
+      researchers: cleanedResearchers,
+      locationIds: cleanedLocationIds,
+      id: `research-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    });
+
+    const savedLocations = [];
+
+    for (const location of locations) {
+      const normalized = normalizeLocation(location);
+      location.researches = [...normalized.researches, researchEntry];
+      location.description = '';
+      location.researchers = [];
+      const savedLocation = await location.save();
+      savedLocations.push(normalizeLocation(savedLocation));
+    }
+
+    return res.status(201).json({
+      success: true,
+      locations: savedLocations,
+      message: 'Research added successfully',
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to add research: ' + error.message });
   }
 });
 

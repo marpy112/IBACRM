@@ -1,18 +1,9 @@
-import { useState } from 'react';
-import { addLocation, deleteLocation } from '../services/api';
+import { useMemo, useState } from 'react';
+import { addLocation, addResearchToLocations, deleteLocation } from '../services/api';
 import MapPicker from './MapPicker';
 import AccountManagement from './AccountManagement';
+import type { ResearchLocation, ResearcherEntry } from '../types/research';
 import './AdminDashboard.css';
-
-export interface ResearchLocation {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  description: string;
-  researchers: string[];
-  radiusKm: number;
-}
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -23,6 +14,37 @@ interface AdminDashboardProps {
   mapboxAccessToken: string;
 }
 
+interface LocationFormState {
+  name: string;
+  latitude: string;
+  longitude: string;
+  radiusKm: string;
+}
+
+interface ResearchFormState {
+  locationIds: string[];
+  title: string;
+  description: string;
+  researchers: ResearcherEntry[];
+}
+
+const EMPTY_LOCATION_FORM: LocationFormState = {
+  name: '',
+  latitude: '',
+  longitude: '',
+  radiusKm: '',
+};
+
+const EMPTY_RESEARCH_FORM: ResearchFormState = {
+  locationIds: [],
+  title: '',
+  description: '',
+  researchers: [
+    { name: '', degree: '' },
+    { name: '', degree: '' },
+  ],
+};
+
 export default function AdminDashboard({
   onLogout,
   adminEmail,
@@ -32,30 +54,79 @@ export default function AdminDashboard({
   mapboxAccessToken,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'locations' | 'accounts'>('locations');
-  const [formData, setFormData] = useState({
-    name: '',
-    latitude: '',
-    longitude: '',
-    description: '',
-    researcher1: '',
-    researcher2: '',
-    radiusKm: '',
-  });
+  const [locationForm, setLocationForm] = useState<LocationFormState>(EMPTY_LOCATION_FORM);
+  const [researchForm, setResearchForm] = useState<ResearchFormState>(EMPTY_RESEARCH_FORM);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleInputChange = (
+  const selectedLocationNames = useMemo(
+    () =>
+      locations
+        .filter((location) => researchForm.locationIds.includes(location.id))
+        .map((location) => location.name),
+    [locations, researchForm.locationIds]
+  );
+
+  const handleLocationInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setLocationForm((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
+  const handleResearchInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setResearchForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleLocationSelectionChange = (locationId: string) => {
+    setResearchForm((prev) => ({
+      ...prev,
+      locationIds: prev.locationIds.includes(locationId)
+        ? prev.locationIds.filter((id) => id !== locationId)
+        : [...prev.locationIds, locationId],
+    }));
+  };
+
+  const handleResearcherChange = (index: number, field: keyof ResearcherEntry, value: string) => {
+    setResearchForm((prev) => ({
+      ...prev,
+      researchers: prev.researchers.map((researcher, currentIndex) =>
+        currentIndex === index ? { ...researcher, [field]: value } : researcher
+      ),
+    }));
+  };
+
+  const addResearcherField = () => {
+    setResearchForm((prev) => ({
+      ...prev,
+      researchers: [...prev.researchers, { name: '', degree: '' }],
+    }));
+  };
+
+  const removeResearcherField = (index: number) => {
+    setResearchForm((prev) => {
+      if (prev.researchers.length <= 1) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        researchers: prev.researchers.filter((_, currentIndex) => currentIndex !== index),
+      };
+    });
+  };
+
   const handleCoordinatesChange = (latitude: number, longitude: number) => {
-    setFormData((prev) => ({
+    setLocationForm((prev) => ({
       ...prev,
       latitude: latitude.toFixed(4),
       longitude: longitude.toFixed(4),
@@ -73,67 +144,96 @@ export default function AdminDashboard({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLocationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    // Validation
-    if (!formData.name || !formData.latitude || !formData.longitude || !formData.description) {
-      setError('Please fill in all required fields');
+    if (!locationForm.name || !locationForm.latitude || !locationForm.longitude) {
+      setError('Please fill in the location name and coordinates.');
       return;
     }
 
-    if (!formData.researcher1) {
-      setError('Please add at least one researcher');
-      return;
-    }
+    const lat = parseFloat(locationForm.latitude);
+    const lng = parseFloat(locationForm.longitude);
+    const radius = parseFloat(locationForm.radiusKm || '15');
 
-    const lat = parseFloat(formData.latitude);
-    const lng = parseFloat(formData.longitude);
-    const radius = parseFloat(formData.radiusKm || '15');
-
-    if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
-      setError('Latitude, longitude, and radius must be valid numbers');
+    if (Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(radius)) {
+      setError('Latitude, longitude, and radius must be valid numbers.');
       return;
     }
 
     if (lat < -90 || lat > 90) {
-      setError('Latitude must be between -90 and 90');
+      setError('Latitude must be between -90 and 90.');
       return;
     }
 
     if (lng < -180 || lng > 180) {
-      setError('Longitude must be between -180 and 180');
+      setError('Longitude must be between -180 and 180.');
       return;
     }
 
     try {
       const result = await addLocation({
-        name: formData.name,
+        name: locationForm.name.trim(),
         latitude: lat,
         longitude: lng,
-        description: formData.description,
-        researcher1: formData.researcher1,
-        researcher2: formData.researcher2 || undefined,
         radiusKm: radius,
       });
 
       onAddLocation(result.location);
-      setSuccess(`Location "${formData.name}" added successfully!`);
-      setFormData({
-        name: '',
-        latitude: '',
-        longitude: '',
-        description: '',
-        researcher1: '',
-        researcher2: '',
-        radiusKm: '',
-      });
-
+      setSuccess(`Location "${result.location.name}" created successfully!`);
+      setLocationForm(EMPTY_LOCATION_FORM);
+      setResearchForm((prev) => ({
+        ...prev,
+        locationIds: prev.locationIds.length > 0 ? prev.locationIds : [result.location.id],
+      }));
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add location');
+    }
+  };
+
+  const handleResearchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (researchForm.locationIds.length === 0 || !researchForm.title || !researchForm.description) {
+      setError('Please select at least one location, plus a research title and description.');
+      return;
+    }
+
+    const cleanedResearchers = researchForm.researchers
+      .map((item) => ({
+        name: item.name.trim(),
+        degree: item.degree.trim(),
+      }))
+      .filter((item) => item.name);
+    if (cleanedResearchers.length === 0) {
+      setError('Please add at least one researcher.');
+      return;
+    }
+
+    try {
+      const result = await addResearchToLocations(researchForm.locationIds, {
+        title: researchForm.title.trim(),
+        description: researchForm.description.trim(),
+        researchers: cleanedResearchers,
+      });
+
+      result.locations.forEach((location: ResearchLocation) => {
+        onAddLocation(location);
+      });
+
+      setSuccess(`Research added to ${result.locations.length} location${result.locations.length !== 1 ? 's' : ''} successfully!`);
+      setResearchForm((prev) => ({
+        ...EMPTY_RESEARCH_FORM,
+        locationIds: prev.locationIds,
+      }));
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add research');
     }
   };
 
@@ -154,13 +254,13 @@ export default function AdminDashboard({
           className={`tab-button ${activeTab === 'locations' ? 'active' : ''}`}
           onClick={() => setActiveTab('locations')}
         >
-          📍 Locations
+          Locations
         </button>
         <button
           className={`tab-button ${activeTab === 'accounts' ? 'active' : ''}`}
           onClick={() => setActiveTab('accounts')}
         >
-          👥 Accounts
+          User Management
         </button>
       </div>
 
@@ -168,19 +268,19 @@ export default function AdminDashboard({
         {activeTab === 'locations' && (
           <div className="tab-content">
             <div className="add-location-section">
-              <h2>Add New Research Location</h2>
+              <h2>Add Location</h2>
 
               {error && <div className="admin-error">{error}</div>}
               {success && <div className="admin-success">{success}</div>}
 
               <MapPicker
-                latitude={formData.latitude}
-                longitude={formData.longitude}
+                latitude={locationForm.latitude}
+                longitude={locationForm.longitude}
                 onCoordinatesChange={handleCoordinatesChange}
                 accessToken={mapboxAccessToken}
               />
 
-              <form onSubmit={handleSubmit} className="admin-form">
+              <form onSubmit={handleLocationSubmit} className="admin-form">
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="name">Location Name *</label>
@@ -188,9 +288,9 @@ export default function AdminDashboard({
                       type="text"
                       id="name"
                       name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Mount Apo Research Center"
+                      value={locationForm.name}
+                      onChange={handleLocationInputChange}
+                      placeholder="e.g., Valencia City"
                     />
                   </div>
 
@@ -200,8 +300,8 @@ export default function AdminDashboard({
                       type="number"
                       id="radiusKm"
                       name="radiusKm"
-                      value={formData.radiusKm}
-                      onChange={handleInputChange}
+                      value={locationForm.radiusKm}
+                      onChange={handleLocationInputChange}
                       placeholder="e.g., 15"
                       min="1"
                       step="0.1"
@@ -216,9 +316,9 @@ export default function AdminDashboard({
                       type="number"
                       id="latitude"
                       name="latitude"
-                      value={formData.latitude}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 6.9919"
+                      value={locationForm.latitude}
+                      onChange={handleLocationInputChange}
+                      placeholder="e.g., 7.9037"
                       step="0.0001"
                     />
                   </div>
@@ -229,56 +329,114 @@ export default function AdminDashboard({
                       type="number"
                       id="longitude"
                       name="longitude"
-                      value={formData.longitude}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 125.3631"
+                      value={locationForm.longitude}
+                      onChange={handleLocationInputChange}
+                      placeholder="e.g., 125.0928"
                       step="0.0001"
                     />
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="description">Description *</label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Describe the research location and its significance..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="researcher1">Primary Researcher *</label>
-                    <input
-                      type="text"
-                      id="researcher1"
-                      name="researcher1"
-                      value={formData.researcher1}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Dr. Maria Santos"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="researcher2">Secondary Researcher</label>
-                    <input
-                      type="text"
-                      id="researcher2"
-                      name="researcher2"
-                      value={formData.researcher2}
-                      onChange={handleInputChange}
-                      placeholder="Optional"
-                    />
-                  </div>
-                </div>
-
                 <button type="submit" className="submit-button">
-                  Add Location
+                  Create Location
                 </button>
               </form>
+
+              <div className="admin-form form-section-gap">
+                <h2>Add Research</h2>
+                <form onSubmit={handleResearchSubmit}>
+                  <div className="form-group">
+                    <label>Choose One or More Locations *</label>
+                    <div className="location-selector-list">
+                      {locations.length === 0 ? (
+                        <p className="form-hint">Create a location first before adding research.</p>
+                      ) : (
+                        locations.map((location) => (
+                          <label key={location.id} className="location-selector-item">
+                            <input
+                              type="checkbox"
+                              checked={researchForm.locationIds.includes(location.id)}
+                              onChange={() => handleLocationSelectionChange(location.id)}
+                            />
+                            <span>{location.name}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    {selectedLocationNames.length > 0 && (
+                      <p className="form-hint">
+                        Selected: {selectedLocationNames.join(', ')}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="title">Research Title *</label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={researchForm.title}
+                      onChange={handleResearchInputChange}
+                      placeholder="e.g., Watershed Quality Assessment"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="description">Research Description *</label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={researchForm.description}
+                      onChange={handleResearchInputChange}
+                      placeholder="Describe the research registered in these locations..."
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <div className="researchers-header">
+                      <label>Researchers *</label>
+                      <button type="button" className="secondary-button" onClick={addResearcherField}>
+                        Add Researcher
+                      </button>
+                    </div>
+
+                    <div className="researchers-stack">
+                      {researchForm.researchers.map((researcher, index) => (
+                        <div className="researcher-row" key={`researcher-${index}`}>
+                          <input
+                            type="text"
+                            value={researcher.name}
+                            onChange={(event) => handleResearcherChange(index, 'name', event.target.value)}
+                            placeholder={`Researcher ${index + 1} name`}
+                          />
+                          <input
+                            type="text"
+                            value={researcher.degree}
+                            onChange={(event) => handleResearcherChange(index, 'degree', event.target.value)}
+                            placeholder="Degree"
+                          />
+                          {researchForm.researchers.length > 1 && (
+                            <button
+                              type="button"
+                              className="remove-button"
+                              onClick={() => removeResearcherField(index)}
+                              aria-label={`Remove researcher ${index + 1}`}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button type="submit" className="submit-button" disabled={locations.length === 0}>
+                    Add Research to Selected Locations
+                  </button>
+                </form>
+              </div>
             </div>
 
             <div className="locations-list-section">
@@ -291,30 +449,51 @@ export default function AdminDashboard({
                   {locations.map((location) => (
                     <div key={location.id} className="location-card">
                       <div className="location-card-header">
-                        <h3>{location.name || 'Unnamed Location'}</h3>
+                        <div>
+                          <h3>{location.name || 'Unnamed Location'}</h3>
+                          <p className="location-meta">
+                            {location.researches.length} research
+                            {location.researches.length !== 1 ? 'es' : ''} registered
+                          </p>
+                        </div>
                         <button
                           onClick={() => handleDelete(location.id)}
                           className="delete-button"
                           title="Delete location"
                         >
-                          ✕
+                          x
                         </button>
                       </div>
 
                       <div className="location-details">
                         <p>
-                          <strong>Coordinates:</strong> {location.latitude ? location.latitude.toFixed(4) : 'N/A'}°N,{' '}
-                          {location.longitude ? location.longitude.toFixed(4) : 'N/A'}°E
+                          <strong>Coordinates:</strong> {location.latitude.toFixed(4)}°N, {location.longitude.toFixed(4)}°E
                         </p>
                         <p>
-                          <strong>Radius:</strong> {location.radiusKm || 'N/A'} km
+                          <strong>Radius:</strong> {location.radiusKm} km
                         </p>
-                        <p>
-                          <strong>Description:</strong> {location.description || 'N/A'}
-                        </p>
-                        <p>
-                          <strong>Researchers:</strong> {location.researchers ? location.researchers.join(', ') : 'N/A'}
-                        </p>
+                      </div>
+
+                      <div className="research-list">
+                        {location.researches.map((research) => (
+                          <article key={`${location.id}-${research.id}`} className="research-card">
+                            <h4>{research.title}</h4>
+                            <p>{research.description}</p>
+                            <p>
+                              <strong>Researchers:</strong>{' '}
+                              {research.researchers
+                                .map((researcher) =>
+                                  researcher.degree ? `${researcher.name}, ${researcher.degree}` : researcher.name
+                                )
+                                .join(', ')}
+                            </p>
+                            {research.locationIds && research.locationIds.length > 1 && (
+                              <p>
+                                <strong>Linked locations:</strong> {research.locationIds.length}
+                              </p>
+                            )}
+                          </article>
+                        ))}
                       </div>
                     </div>
                   ))}

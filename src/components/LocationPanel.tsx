@@ -1,15 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import type { ResearchLocation } from '../types/research';
 import './LocationPanel.css';
-
-interface ResearchLocation {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  description: string;
-  researchers: string[];
-  radiusKm: number;
-}
 
 interface LocationPanelProps {
   locations: ResearchLocation[];
@@ -21,6 +12,26 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
   onLocationSelect,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredLocations = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) {
+      return locations;
+    }
+
+    return locations.filter((location) => {
+      const researchers = location.researches
+        .flatMap((research) => research.researchers)
+        .map((researcher) => `${researcher.name} ${researcher.degree}`)
+        .join(' ');
+      const researchTitles = location.researches.map((research) => research.title).join(' ');
+
+      return [location.name, researchTitles, researchers].some((value) =>
+        value.toLowerCase().includes(query)
+      );
+    });
+  }, [locations, searchTerm]);
 
   return (
     <div className={`location-panel ${isExpanded ? 'expanded' : 'collapsed'}`}>
@@ -34,28 +45,44 @@ export const LocationPanel: React.FC<LocationPanelProps> = ({
 
       {isExpanded && (
         <div className="panel-content">
-          {locations.length === 0 ? (
+          <div className="location-search-wrap">
+            <input
+              type="search"
+              className="location-search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search location, research, or researcher"
+            />
+          </div>
+
+          {filteredLocations.length === 0 ? (
             <p className="empty-message">No research locations found</p>
           ) : (
             <ul className="locations-list">
-              {locations.map((location) => (
-                <li key={location.id} className="location-item">
-                  <button
-                    className="location-button"
-                    onClick={() => onLocationSelect?.(location)}
-                  >
-                    <span className="location-name">{location.name}</span>
-                    <span className="location-coords">
-                      ({location.latitude.toFixed(2)}°, {location.longitude.toFixed(2)}°)
-                    </span>
-                    {location.researchers.length > 0 && (
-                      <span className="researcher-count">
-                        {location.researchers.length} researcher{location.researchers.length !== 1 ? 's' : ''}
+              {filteredLocations.map((location) => {
+                const researcherCount = new Set(
+                  location.researches.flatMap((research) => research.researchers.map((researcher) => researcher.name))
+                ).size;
+
+                return (
+                  <li key={location.id} className="location-item">
+                    <button
+                      className="location-button"
+                      onClick={() => onLocationSelect?.(location)}
+                    >
+                      <span className="location-name">{location.name}</span>
+                      <span className="location-coords">
+                        ({location.latitude.toFixed(2)}°, {location.longitude.toFixed(2)}°)
                       </span>
-                    )}
-                  </button>
-                </li>
-              ))}
+                      <span className="location-summary">
+                        {location.researches.length} research
+                        {location.researches.length !== 1 ? 'es' : ''} and {researcherCount} researcher
+                        {researcherCount !== 1 ? 's' : ''}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

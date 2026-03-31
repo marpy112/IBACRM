@@ -1,12 +1,4 @@
-export interface ResearchLocation {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  description: string;
-  researchers: string[];
-  radiusKm: number; // Research area radius in kilometers
-}
+import type { ResearchLocation } from '../types/research';
 
 export const MINDANAO_RESEARCH_LOCATIONS: ResearchLocation[] = [
   {
@@ -14,71 +6,143 @@ export const MINDANAO_RESEARCH_LOCATIONS: ResearchLocation[] = [
     name: 'Davao City Research Hub',
     latitude: 7.0731,
     longitude: 125.6121,
-    description: 'Urban ecology and biodiversity research center in Mindanao\'s largest city',
-    researchers: ['Dr. Maria Santos', 'Dr. Juan Cruz'],
     radiusKm: 15,
+    researches: [
+      {
+        id: 'davao-city-urban-ecology',
+        title: 'Urban Ecology and Biodiversity',
+        description: 'Urban ecology and biodiversity research center in Mindanao\'s largest city',
+        researchers: [
+          { name: 'Dr. Maria Santos', degree: '' },
+          { name: 'Dr. Juan Cruz', degree: '' },
+        ],
+      },
+    ],
   },
   {
     id: 'mount-apo',
     name: 'Mount Apo Field Station',
     latitude: 6.9919,
     longitude: 125.3631,
-    description: 'High-altitude ecosystem research facility on the Philippines\' highest peak',
-    researchers: ['Prof. Antonio López', 'Dr. Rosa Garcia'],
     radiusKm: 12,
+    researches: [
+      {
+        id: 'mount-apo-high-altitude',
+        title: 'High-Altitude Ecosystem Study',
+        description: 'High-altitude ecosystem research facility on the Philippines\' highest peak',
+        researchers: [
+          { name: 'Prof. Antonio Lopez', degree: '' },
+          { name: 'Dr. Rosa Garcia', degree: '' },
+        ],
+      },
+    ],
   },
   {
     id: 'bukidnon',
     name: 'Bukidnon Agricultural Research Center',
     latitude: 8.4545,
     longitude: 124.8389,
-    description: 'Sustainable agriculture and crop development research station',
-    researchers: ['Dr. Miguel Torres', 'Dr. Ana Reyes'],
     radiusKm: 20,
+    researches: [
+      {
+        id: 'bukidnon-agriculture',
+        title: 'Sustainable Agriculture and Crop Development',
+        description: 'Sustainable agriculture and crop development research station',
+        researchers: [
+          { name: 'Dr. Miguel Torres', degree: '' },
+          { name: 'Dr. Ana Reyes', degree: '' },
+        ],
+      },
+    ],
   },
   {
     id: 'cotabato',
     name: 'Cotabato Wetlands Study Area',
     latitude: 6.2189,
     longitude: 124.7281,
-    description: 'Wetland ecology and migratory bird monitoring site',
-    researchers: ['Dr. Ricardo Flores', 'Dr. Carmen Ramos'],
     radiusKm: 25,
+    researches: [
+      {
+        id: 'cotabato-wetlands-monitoring',
+        title: 'Wetland Ecology and Bird Monitoring',
+        description: 'Wetland ecology and migratory bird monitoring site',
+        researchers: [
+          { name: 'Dr. Ricardo Flores', degree: '' },
+          { name: 'Dr. Carmen Ramos', degree: '' },
+        ],
+      },
+    ],
   },
   {
     id: 'zamboanga',
     name: 'Zamboanga Marine Research Institute',
     latitude: 6.9271,
     longitude: 122.0724,
-    description: 'Coastal and marine biodiversity research facility',
-    researchers: ['Prof. Fernando Diaz', 'Dr. Isabel Morales'],
     radiusKm: 30,
+    researches: [
+      {
+        id: 'zamboanga-marine-biodiversity',
+        title: 'Coastal and Marine Biodiversity',
+        description: 'Coastal and marine biodiversity research facility',
+        researchers: [
+          { name: 'Prof. Fernando Diaz', degree: '' },
+          { name: 'Dr. Isabel Morales', degree: '' },
+        ],
+      },
+    ],
   },
   {
     id: 'misamis',
     name: 'Misamis Oriental Forest Reserve',
     latitude: 8.7533,
     longitude: 124.6431,
-    description: 'Tropical forest conservation and wildlife research station',
-    researchers: ['Dr. Pablo Mendez', 'Dr. Sofia Rojas'],
     radiusKm: 22,
+    researches: [
+      {
+        id: 'misamis-forest-conservation',
+        title: 'Forest Conservation and Wildlife Research',
+        description: 'Tropical forest conservation and wildlife research station',
+        researchers: [
+          { name: 'Dr. Pablo Mendez', degree: '' },
+          { name: 'Dr. Sofia Rojas', degree: '' },
+        ],
+      },
+    ],
   },
   {
     id: 'lanao',
     name: 'Lake Lanao Research Center',
     latitude: 8.0,
     longitude: 124.25,
-    description: 'Freshwater aquatic research and endemic species study',
-    researchers: ['Dr. Marcos Gutierrez', 'Dr. Elena Vargas'],
     radiusKm: 18,
+    researches: [
+      {
+        id: 'lanao-freshwater-ecosystem',
+        title: 'Freshwater Ecosystem and Endemic Species',
+        description: 'Freshwater aquatic research and endemic species study',
+        researchers: [
+          { name: 'Dr. Marcos Gutierrez', degree: '' },
+          { name: 'Dr. Elena Vargas', degree: '' },
+        ],
+      },
+    ],
   },
   {
     id: 'surigao',
     name: 'Surigao Geological Research Station',
     latitude: 9.7624,
     longitude: 125.5047,
-    description: 'Mineral resources and geological hazard assessment research',
-    researchers: ['Prof. Luis Castro', 'Dr. Beatriz Silva'],
     radiusKm: 16,
+    researches: [
+      {
+        id: 'surigao-geological-hazards',
+        title: 'Geological Hazard and Mineral Assessment',
+        description: 'Mineral resources and geological hazard assessment research',
+        researchers: [
+          { name: 'Prof. Luis Castro', degree: '' },
+          { name: 'Dr. Beatriz Silva', degree: '' },
+        ],
+      },
+    ],
   },
 ];
