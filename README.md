@@ -2,25 +2,6 @@
 
 An interactive map application built with React, TypeScript, and Mapbox GL to help researchers discover and explore research locations across Mindanao, Philippines.
 
-## Features
-
-- ⚡ **Interactive Map** - Powered by Mapbox GL for smooth, responsive mapping
-- 📍 **Research Locations** - Browse 8+ pre-configured research sites across Mindanao
-- 🔍 **Location Details** - View researcher information, coordinates, and descriptions
-- 📱 **Responsive Design** - Works seamlessly on desktop and mobile devices
-- 🌳 **Region Focus** - Curated view centered specifically on Mindanao
-- 🎨 **Modern UI** - Clean, gradient-based interface with intuitive controls
-
-## Supported Research Locations
-
-- **Davao City Research Hub** - Urban ecology and biodiversity
-- **Mount Apo Field Station** - High-altitude ecosystem research
-- **Bukidnon Agricultural Research Center** - Sustainable agriculture
-- **Cotabato Wetlands Study Area** - Wetland ecology
-- **Zamboanga Marine Research Institute** - Coastal and marine biodiversity
-- **Misamis Oriental Forest Reserve** - Tropical forest conservation
-- **Lake Lanao Research Center** - Freshwater aquatic research
-- **Surigao Geological Research Station** - Mineral resources and geology
 
 ## Getting Started
 

@@ -7,7 +7,77 @@ import { LocationPanel } from './components/LocationPanel'
 import Login from './components/Login'
 import AdminDashboard, { ResearchLocation } from './components/AdminDashboard'
 import { fetchLocations } from './services/api'
+import { LoadingScreen } from './components/LoadingScreen'
 import { MINDANAO_RESEARCH_LOCATIONS } from './data/mindanaoLocations'
+
+function AppContent() {
+  const [isReady, setIsReady] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    let retryCount = 0
+    const MAX_RETRIES = 30
+
+    const checkDatabaseHealth = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api')}/health`, {
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+
+        if (!response.ok) {
+          throw new Error(`Health check failed with status ${response.status}`);
+        }
+
+        const health = await response.json();
+        if (isMounted) {
+          if (health.mongodb !== false) {
+            setIsReady(true)
+          } else {
+            // Database not ready, wait and retry
+            if (retryCount < MAX_RETRIES) {
+              retryCount++
+              setTimeout(checkDatabaseHealth, 2000)
+            } else {
+              // After max retries, proceed anyway with fallback data
+              setIsReady(true)
+            }
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
+          // If health check fails, retry but don't get stuck
+          // This could be because the endpoint doesn't exist on older servers
+          if (retryCount < MAX_RETRIES) {
+            retryCount++
+            setTimeout(checkDatabaseHealth, 2000)
+          } else {
+            // After max retries, proceed with fallback data
+            setIsReady(true)
+          }
+        }
+      }
+    }
+
+    checkDatabaseHealth()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  if (!isReady) {
+    return <LoadingScreen />
+  }
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MapView />} />
+        <Route path="/admin" element={<AdminPage />} />
+      </Routes>
+    </Router>
+  )
+}
 
 // Map View Component
 function MapView() {
@@ -148,14 +218,7 @@ function AdminPage() {
 }
 
 function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<MapView />} />
-        <Route path="/admin" element={<AdminPage />} />
-      </Routes>
-    </Router>
-  )
+  return <AppContent />
 }
 
 export default App

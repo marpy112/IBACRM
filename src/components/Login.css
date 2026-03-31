@@ -91,13 +91,9 @@
   transform: translateY(0);
 }
 
-.login-toggle {
+.toggle-link {
   text-align: center;
   margin-top: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   font-size: 0.9em;
   color: #666;
 }

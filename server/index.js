@@ -222,6 +222,100 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
+// ============ ACCOUNT MANAGEMENT ROUTES ============
+
+// GET /api/admin/accounts
+app.get('/api/admin/accounts', async (req, res) => {
+  try {
+    const accounts = await Admin.find({}, { password: 0 });
+    res.json({ success: true, accounts });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch accounts: ' + error.message });
+  }
+});
+
+// POST /api/admin/accounts
+app.post('/api/admin/accounts', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    const newAdmin = await Admin.create({ email, password });
+
+    res.status(201).json({
+      success: true,
+      account: { _id: newAdmin._id, email: newAdmin.email, createdAt: newAdmin.createdAt },
+      message: 'Account created successfully',
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create account: ' + error.message });
+  }
+});
+
+// DELETE /api/admin/accounts/:id
+app.delete('/api/admin/accounts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await Admin.deleteOne({ _id: id });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully',
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete account: ' + error.message });
+  }
+});
+
+// PUT /api/admin/accounts/:id/password
+app.put('/api/admin/accounts/:id/password', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({ error: 'New password required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const admin = await Admin.findByIdAndUpdate(
+      id,
+      { password: newPassword },
+      { new: true }
+    ).select('-password');
+
+    if (!admin) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully',
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update password: ' + error.message });
+  }
+});
+
 // ============ LOCATION ROUTES ============
 
 // GET /api/locations
@@ -296,7 +390,12 @@ app.delete('/api/locations/:id', async (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
+  const mongodbStatus = mongoose.connection.readyState === 1;
+  res.json({
+    status: 'Server is running',
+    mongodb: mongodbStatus,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Error handling middleware

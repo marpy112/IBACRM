@@ -97,28 +97,16 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           </button>
         </form>
 
-        <div className="login-toggle">
-          <span>{isSignUp ? 'Already have an account?' : "Don't have an account?"}</span>
+        <p className="toggle-link">
+          {isSignUp ? 'Already have an account? ' : 'Need an account? '}
           <button
             type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError('');
-              setEmail('');
-              setPassword('');
-              setConfirmPassword('');
-            }}
+            onClick={() => setIsSignUp(!isSignUp)}
             className="toggle-button"
           >
             {isSignUp ? 'Login' : 'Sign Up'}
           </button>
-        </div>
-
-        <div className="demo-credentials">
-          <p className="demo-title">Demo Credentials:</p>
-          <p>Email: admin@iba.edu.ph</p>
-          <p>Password: admin123</p>
-        </div>
+        </p>
       </div>
     </div>
   );
