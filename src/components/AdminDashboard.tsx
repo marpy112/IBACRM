@@ -3,6 +3,7 @@ import { addLocation, addResearchToLocations, deleteLocation } from '../services
 import MapPicker from './MapPicker';
 import AccountManagement from './AccountManagement';
 import type { ResearchLocation, ResearcherEntry } from '../types/research';
+import { exportResearchMap } from '../utils/researchExport';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -234,6 +235,19 @@ export default function AdminDashboard({
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add research');
+    }
+  };
+
+  const handleExportResearch = (location: ResearchLocation, research: ResearchLocation['researches'][number]) => {
+    setError('');
+    setSuccess('');
+
+    try {
+      exportResearchMap(research, location, locations, mapboxAccessToken);
+      setSuccess(`Export preview opened for "${research.title}".`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export research map');
     }
   };
 
@@ -477,7 +491,16 @@ export default function AdminDashboard({
                       <div className="research-list">
                         {location.researches.map((research) => (
                           <article key={`${location.id}-${research.id}`} className="research-card">
-                            <h4>{research.title}</h4>
+                            <div className="research-card-header">
+                              <h4>{research.title}</h4>
+                              <button
+                                type="button"
+                                className="export-button"
+                                onClick={() => handleExportResearch(location, research)}
+                              >
+                                Export
+                              </button>
+                            </div>
                             <p>{research.description}</p>
                             <p>
                               <strong>Researchers:</strong>{' '}

@@ -373,9 +373,34 @@
   border: 1px solid #eadfdf;
 }
 
+.research-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .research-card h4 {
   margin: 0 0 8px;
   color: #4f1d1d;
+}
+
+.export-button {
+  border: 1px solid #8b0000;
+  background: #fff4f4;
+  color: #8b0000;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+  white-space: nowrap;
+}
+
+.export-button:hover {
+  background: #8b0000;
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .research-card p {
