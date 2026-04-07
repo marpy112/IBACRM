@@ -34,8 +34,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     longitude: 125.0,
     latitude: 8.5,
     zoom: 7,
-    pitch: 0,
-    bearing: 0,
+    pitch: 70,
+    bearing: 40,
   });
   const mapRef = React.useRef<MapRef | null>(null);
 
@@ -74,6 +74,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       'poi_label',
       'poi_icon',
       'natural-point-label',
+      'hospital',
+      'school',
+      'restaurant',
+      'cafe',
+      'bank',
+      'shop',
+      'store',
+      'mall',
+      'airport',
     ];
 
     poiLayersToHide.forEach((layerId) => {
@@ -85,6 +94,118 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         // Skip missing layers from the current style.
       }
     });
+
+    // Add 3D terrain
+    try {
+      map.addSource('mapbox-dem', {
+        type: 'raster-dem',
+        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        tileSize: 512,
+      } as any);
+      
+      map.setTerrain({
+        source: 'mapbox-dem',
+        exaggeration: 1.5,
+      });
+
+      map.addLayer({
+        id: 'sky',
+        type: 'sky',
+        paint: {
+          'sky-type': 'atmosphere',
+          'sky-atmosphere-sun-intensity': 0.3,
+        },
+      } as any);
+    } catch {
+      // Terrain or sky layer may not be supported
+    }
+
+    // Add 3D buildings
+    try {
+      const allLayers = map.getStyle().layers || [];
+      const labelLayerId = allLayers.find((layer: any) => layer.type === 'symbol')?.id;
+
+      map.addLayer({
+        id: '3d-buildings',
+        source: 'composite',
+        'source-layer': 'building',
+        filter: ['==', 'extrude', 'true'],
+        type: 'fill-extrusion',
+        minzoom: 0,
+        paint: {
+          'fill-extrusion-color': [
+            'interpolate',
+            ['linear'],
+            ['get', 'height'],
+            0, '#d4af85',
+            100, '#c9a876',
+            200, '#b89968'
+          ],
+          'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 0, 0, 15, ['*', ['get', 'height'], 1.3]],
+          'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 0, 0, 15, ['get', 'min_height']],
+          'fill-extrusion-opacity': 1,
+          'fill-extrusion-vertical-gradient': true,
+        },
+      } as any, labelLayerId);
+
+      // Apply legend colors to map layers
+      const styleLayers = map.getStyle().layers || [];
+      styleLayers.forEach((layer: any) => {
+        const id = layer?.id?.toLowerCase() || '';
+        const sourceLayer = layer?.['source-layer']?.toLowerCase() || '';
+        const combined = `${id} ${sourceLayer}`;
+        const type = layer?.type || '';
+
+        // Apply water colors
+        if (combined.includes('water') || combined.includes('waterway')) {
+          if (type === 'fill') {
+            try {
+              map.setPaintProperty(layer.id, 'fill-color', '#79b7e3');
+            } catch {
+              // Skip
+            }
+          }
+          if (type === 'line') {
+            try {
+              map.setPaintProperty(layer.id, 'line-color', '#79b7e3');
+            } catch {
+              // Skip
+            }
+          }
+        }
+
+        // Apply road colors
+        if (combined.includes('road')) {
+          if (type === 'line') {
+            try {
+              map.setPaintProperty(layer.id, 'line-color', '#8b929a');
+            } catch {
+              // Skip
+            }
+          }
+          if (type === 'fill') {
+            try {
+              map.setPaintProperty(layer.id, 'fill-color', '#8b929a');
+            } catch {
+              // Skip
+            }
+          }
+        }
+
+        // Apply boundary colors
+        if (combined.includes('admin') || combined.includes('boundary')) {
+          if (type === 'line') {
+            try {
+              map.setPaintProperty(layer.id, 'line-color', '#2f3338');
+            } catch {
+              // Skip
+            }
+          }
+        }
+      });
+    } catch {
+      // Building layer may not be supported
+    }
   };
 
   useEffect(() => {
@@ -102,8 +223,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       longitude: location.longitude,
       latitude: location.latitude,
       zoom: 12,
-      pitch: 20,
-      bearing: 0,
+      pitch: 70,
+      bearing: 40,
     }));
     setPopupInfo(location);
     setHighlightedLocationIds([location.id]);
@@ -207,8 +328,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         longitude: location.longitude,
         latitude: location.latitude,
         zoom: 11.5,
-        pitch: 20,
-        bearing: 0,
+        pitch: 70,
+        bearing: 40,
       }));
       return;
     }
@@ -315,7 +436,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
         onLoad={handleMapLoad}
-        mapStyle="mapbox://styles/mapbox/outdoors-v12"
+        mapStyle="mapbox://styles/mapbox/streets-v12"
         mapboxAccessToken={accessToken}
         style={{
           position: 'absolute',
