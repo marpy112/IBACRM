@@ -48,7 +48,27 @@
 .study-researcher-photo { width: 128px; height: 128px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--line); border-radius: 4px; }
 .study-researcher-placeholder { display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); font: 36px Georgia, serif; }
 .study-researcher-profiles p { color: var(--muted); }
+.study-document-page .study-researcher-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 28px 24px;
+  width: 100%;
+}
+.study-researcher-grid > .study-researcher-card {
+  display: grid;
+  grid-template-rows: 128px auto;
+  justify-items: center;
+  align-items: start;
+  gap: 16px;
+  text-align: center;
+}
+.study-researcher-card > div { width: 100%; }
 @media (max-width: 600px) { .study-researcher-photo { width: 84px; height: 84px; } .study-researcher-profiles li { gap: 12px; } }
+@media (max-width: 600px) {
+  .study-document-page .study-researcher-grid { column-gap: 12px; }
+  .study-researcher-grid > .study-researcher-card { grid-template-rows: 84px auto; gap: 12px; }
+}
 @media (max-width: 600px) {
   .study-document-page { margin: 12px; padding: 24px 20px; }
   .study-document-page h1 { font-size: 24px; }

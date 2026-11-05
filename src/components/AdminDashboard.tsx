@@ -4,6 +4,7 @@ import { Icon } from './Icon';
 import { addLocation, addResearchToLocations, deleteLocation } from '../services/api';
 import MapPicker from './MapPicker';
 import AccountManagement from './AccountManagement';
+import { ResearcherManagement } from './ResearcherManagement';
 import type { ResearchLocation, ResearcherEntry } from '../types/research';
 import { exportResearchMap, exportResearchMapJpg } from '../utils/researchExport';
 import './AdminDashboard.css';
@@ -57,7 +58,7 @@ export default function AdminDashboard({
   onDeleteLocation,
   mapboxAccessToken,
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'locations' | 'accounts'>('locations');
+  const [activeTab, setActiveTab] = useState<'locations' | 'accounts' | 'researchers'>('locations');
   const [editorTab, setEditorTab] = useState<'location' | 'study'>('location');
   const studies = useMemo(() => [...new Map(locations.flatMap((location) => location.researches).map((research) => [research.id, research])).values()], [locations]);
   const researcherCount = new Set(studies.flatMap((research) => research.researchers.map((researcher) => researcher.name.trim().toLowerCase()))).size;
@@ -303,7 +304,7 @@ export default function AdminDashboard({
       <div className="admin-header">
         <div className="admin-header-content">
           <p className="eyebrow">Administration</p>
-          <h1>{activeTab === 'locations' ? 'Research workspace' : 'Account management'}</h1>
+          <h1>{activeTab === 'locations' ? 'Research workspace' : activeTab === 'researchers' ? 'Researcher profiles' : 'Account management'}</h1>
         </div>
         <div className="admin-profile"><span className="profile-avatar">{adminEmail.charAt(0).toUpperCase()}</span><div><strong>Administrator</strong><p className="admin-email">{adminEmail}</p></div></div>
       </div>
@@ -324,6 +325,11 @@ export default function AdminDashboard({
           aria-current={activeTab === 'accounts' ? 'page' : undefined}
         >
           <Icon name="users" /> User management
+        </button>
+        <button className={`tab-button ${activeTab === 'researchers' ? 'active' : ''}`}
+          onClick={() => setActiveTab('researchers')}
+          aria-current={activeTab === 'researchers' ? 'page' : undefined}>
+          <Icon name="users" /> Researchers
         </button>
         <div className="admin-nav-footer">
           <Link to="/" className="tab-button"><Icon name="map" /> View public map <Icon name="arrow" width={16} height={16} /></Link>
@@ -657,6 +663,9 @@ export default function AdminDashboard({
           </div>
         )}
 
+        {activeTab === 'researchers' && (
+          <ResearcherManagement locations={locations} onUpdated={(updated) => updated.forEach(onAddLocation)} />
+        )}
         {activeTab === 'accounts' && (
           <div className="tab-content accounts-content">
             <AccountManagement />

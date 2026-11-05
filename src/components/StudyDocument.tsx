@@ -50,9 +50,9 @@ export function StudyDocument({ study, locationName, onClose }: StudyDocumentPro
         {study.researchers.length > 0 && (
           <section aria-labelledby="study-researchers-heading">
             <h2 id="study-researchers-heading">Researchers</h2>
-            <ul className="study-researcher-profiles">
+            <ul className="study-researcher-profiles study-researcher-grid">
               {study.researchers.map((researcher, index) => (
-                <li key={`${researcher.name}-${index}`}>
+                <li className="study-researcher-card" key={`${researcher.name}-${index}`}>
                   {researcher.photo ? (
                     <img className="study-researcher-photo" src={researcher.photo} alt={`Portrait of ${researcher.name}`} />
                   ) : <span className="study-researcher-photo study-researcher-placeholder" aria-label="No photo available">{researcher.name.trim().charAt(0).toUpperCase()}</span>}

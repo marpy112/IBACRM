@@ -443,6 +443,34 @@ app.post('/api/locations/researches', async (req, res) => {
   }
 });
 
+app.patch('/api/researches/:researchId/researchers/:index', async (req, res) => {
+  try {
+    const { researchId } = req.params;
+    const index = Number(req.params.index);
+    if (!Number.isInteger(index) || index < 0) return res.status(400).json({ error: 'Invalid researcher index' });
+    const location = await Location.findOne({ 'researches.id': researchId });
+    const study = location?.researches.find((entry) => entry.id === researchId);
+    if (!study?.researchers[index]) return res.status(404).json({ error: 'Researcher not found' });
+    let profile;
+    try {
+      profile = buildResearchEntry({ researchers: [req.body] }).researchers[0];
+      if (!profile) throw new Error('Researcher name is required.');
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    // A study can be stored at several locations; keep its researcher copies in sync.
+    await Location.updateMany(
+      { 'researches.id': researchId },
+      { $set: { [`researches.$[study].researchers.${index}`]: profile } },
+      { arrayFilters: [{ 'study.id': researchId }], runValidators: true }
+    );
+    const updated = await Location.find({ 'researches.id': researchId });
+    return res.json({ locations: updated.map(normalizeLocation) });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to update researcher: ' + error.message });
+  }
+});
+
 app.delete('/api/locations/:id', async (req, res) => {
   try {
     const { id } = req.params;

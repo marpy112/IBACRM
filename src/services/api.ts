@@ -181,3 +181,14 @@ export async function deleteLocation(id: string) {
 
   return await response.json();
 }
+
+export async function updateResearcherProfile(researchId: string, index: number, profile: ResearcherEntry) {
+  const response = await fetch(`${API_BASE_URL}/researches/${encodeURIComponent(researchId)}/researchers/${index}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(profile),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Failed to update researcher');
+  return data.locations as ResearchLocation[];
+}
