@@ -42,8 +42,9 @@
 .study-document-page h2 { margin-bottom: 16px; font: 600 22px Georgia, serif; color: var(--brand-dark); }
 .study-document-overview { white-space: pre-wrap; overflow-wrap: anywhere; font: 17px/1.85 Georgia, serif; }
 .study-document-page ul { padding-left: 20px; font-size: 14px; line-height: 1.8; }
-.study-document-page .study-researcher-profiles { padding: 0; list-style: none; display: grid; gap: 24px; }
-.study-researcher-profiles li { display: flex; align-items: center; gap: 20px; overflow-wrap: anywhere; }
+.study-document-page .study-researcher-profiles { padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.study-researcher-profiles li { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; gap: 16px; overflow-wrap: anywhere; }
+.study-researcher-profiles li > div { min-width: 0; max-width: 100%; }
 .study-researcher-photo { width: 128px; height: 128px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--line); border-radius: 4px; }
 .study-researcher-placeholder { display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); font: 36px Georgia, serif; }
 .study-researcher-profiles p { color: var(--muted); }
