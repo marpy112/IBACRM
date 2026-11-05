@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 app.use(createCorsMiddleware());
-app.use(express.json());
+app.use(express.json({ limit: '3mb' }));
 
 let isConnected = false;
 
@@ -122,6 +122,8 @@ app.post('/api/locations/researches', (req, res) => {
       .map((item) => ({
         name: String(item?.name || '').trim(),
         degree: String(item?.degree || '').trim(),
+        age: item?.age,
+        photo: item?.photo,
       }))
       .filter((item) => item.name);
     const cleanedLocationIds = locationIds.map((item) => String(item).trim()).filter(Boolean);

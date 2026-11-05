@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(createCorsMiddleware());
-app.use(express.json());
+app.use(express.json({ limit: '3mb' }));
 app.use('/api', async (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   try {
@@ -399,6 +399,8 @@ app.post('/api/locations/researches', async (req, res) => {
       .map((item) => ({
         name: String(item?.name || '').trim(),
         degree: String(item?.degree || '').trim(),
+        age: item?.age,
+        photo: item?.photo,
       }))
       .filter((item) => item.name);
     const cleanedLocationIds = locationIds.map((item) => String(item).trim()).filter(Boolean);

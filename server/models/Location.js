@@ -26,6 +26,8 @@ const researchSchema = new mongoose.Schema(
               type: String,
               default: '',
             },
+            age: { type: Number, min: 1, max: 120 },
+            photo: { type: String, default: '' },
           },
           { _id: false }
         ),

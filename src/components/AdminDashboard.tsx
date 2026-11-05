@@ -7,6 +7,7 @@ import AccountManagement from './AccountManagement';
 import type { ResearchLocation, ResearcherEntry } from '../types/research';
 import { exportResearchMap, exportResearchMapJpg } from '../utils/researchExport';
 import './AdminDashboard.css';
+import { prepareResearcherPhoto } from '../utils/researcherPhoto';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -66,6 +67,7 @@ export default function AdminDashboard({
   const [success, setSuccess] = useState('');
   const [studySearch, setStudySearch] = useState('');
   const [exportingJpg, setExportingJpg] = useState(false);
+  const [processingPhotos, setProcessingPhotos] = useState(0);
   const studyQuery = studySearch.trim().toLowerCase();
   const visibleLocations = useMemo(() => locations.map((location) => ({
     location,
@@ -117,9 +119,21 @@ export default function AdminDashboard({
     setResearchForm((prev) => ({
       ...prev,
       researchers: prev.researchers.map((researcher, currentIndex) =>
-        currentIndex === index ? { ...researcher, [field]: value } : researcher
+        currentIndex === index ? { ...researcher, [field]: field === 'age' ? (value === '' ? undefined : Number(value)) : value } : researcher
       ),
     }));
+  };
+
+  const handleResearcherPhoto = async (index: number, file: File) => {
+    setProcessingPhotos((count) => count + 1);
+    setError('');
+    try {
+      handleResearcherChange(index, 'photo', await prepareResearcherPhoto(file));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load this photo.');
+    } finally {
+      setProcessingPhotos((count) => count - 1);
+    }
   };
 
   const addResearcherField = () => {
@@ -213,6 +227,7 @@ export default function AdminDashboard({
 
   const handleResearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (processingPhotos > 0) return;
     setError('');
     setSuccess('');
 
@@ -223,6 +238,7 @@ export default function AdminDashboard({
 
     const cleanedResearchers = researchForm.researchers
       .map((item) => ({
+        ...item,
         name: item.name.trim(),
         degree: item.degree.trim(),
       }))
@@ -472,12 +488,34 @@ export default function AdminDashboard({
                     <div className="researchers-stack">
                       {researchForm.researchers.map((researcher, index) => (
                         <div className="researcher-row" key={`researcher-${index}`}>
+                          <label className="researcher-photo-field">
+                            <span>2×2 picture</span>
+                            {researcher.photo ? <img src={researcher.photo} alt={`Photo of ${researcher.name || `researcher ${index + 1}`}`} /> : <span className="researcher-photo-placeholder">No photo</span>}
+                            <input type="file" accept="image/jpeg,image/png,image/webp" disabled={processingPhotos > 0}
+                              aria-label={`Researcher ${index + 1} 2 by 2 picture`}
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                if (file) void handleResearcherPhoto(index, file);
+                                event.target.value = '';
+                              }} />
+                            {researcher.photo && <button type="button" disabled={processingPhotos > 0} onClick={() => handleResearcherChange(index, 'photo', '')}>Remove photo</button>}
+                          </label>
                           <input
                             type="text"
                             aria-label={`Researcher ${index + 1} name`}
                             value={researcher.name}
                             onChange={(event) => handleResearcherChange(index, 'name', event.target.value)}
                             placeholder={`Researcher ${index + 1} name`}
+                          />
+                          <input
+                            type="number"
+                            min="1"
+                            max="120"
+                            step="1"
+                            aria-label={`Researcher ${index + 1} age`}
+                            value={researcher.age ?? ''}
+                            onChange={(event) => handleResearcherChange(index, 'age', event.target.value)}
+                            placeholder="Age"
                           />
                           <input
                             type="text"
@@ -490,6 +528,7 @@ export default function AdminDashboard({
                             <button
                               type="button"
                               className="remove-button"
+                              disabled={processingPhotos > 0}
                               onClick={() => removeResearcherField(index)}
                               aria-label={`Remove researcher ${index + 1}`}
                             >
@@ -501,8 +540,9 @@ export default function AdminDashboard({
                     </div>
                   </div>
 
-                  <button type="submit" className="submit-button" disabled={locations.length === 0}>
-                    Add Research to Selected Locations
+                  <p className="profile-photo-help">Photos are cropped to a square 2×2 format. Names and photos appear in the public study document.</p>
+                  <button type="submit" className="submit-button" disabled={locations.length === 0 || processingPhotos > 0}>
+                    {processingPhotos > 0 ? 'Processing photo…' : 'Add Research to Selected Locations'}
                   </button>
                 </form>
               </div>

@@ -1,6 +1,8 @@
 export interface ResearcherEntry {
   name: string;
   degree: string;
+  age?: number;
+  photo?: string;
 }
 
 export interface ResearchEntry {

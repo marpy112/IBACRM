@@ -49,6 +49,14 @@
 .researchers-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .researchers-stack { display: flex; flex-direction: column; gap: 9px; }
 .researcher-row { display: flex; gap: 7px; }
+.researcher-row { flex-wrap: wrap; padding: 14px; border: 1px solid var(--line); border-radius: 8px; }
+.researcher-row > input { flex: 1 1 140px; min-width: 0; }
+.researcher-photo-field { display: flex; flex-direction: column; gap: 8px; width: 100%; font-size: 12px; }
+.researcher-photo-field img, .researcher-photo-placeholder { width: 100px; height: 100px; object-fit: cover; border: 1px solid var(--line); border-radius: 4px; }
+.researcher-photo-placeholder { display: grid; place-items: center; background: var(--page); color: var(--muted); }
+.researcher-photo-field input { max-width: 100%; }
+.researcher-photo-field button { align-self: flex-start; padding: 6px 10px; background: white; border: 1px solid var(--line); border-radius: 4px; color: var(--brand); }
+.profile-photo-help { font-size: 12px; line-height: 1.5; color: var(--muted); }
 .secondary-button, .remove-button { padding: 8px 10px; border: 0; border-radius: 6px; color: var(--brand); background: var(--brand-soft); font-weight: 600; font-size: 11px; }
 .remove-button { padding: 6px; font-size: 10px; }
 .location-selector-list { display: flex; flex-direction: column; max-height: 200px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 6px; }

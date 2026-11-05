@@ -21,7 +21,15 @@ function buildResearchEntry(input = {}) {
 
           const name = (item?.name || '').toString().trim();
           const degree = (item?.degree || '').toString().trim();
-          return name ? { name, degree } : null;
+          const age = item.age == null || item.age === '' ? undefined : Number(item.age);
+          if (age !== undefined && (!Number.isInteger(age) || age < 1 || age > 120)) {
+            throw new Error('Researcher age must be a whole number from 1 to 120.');
+          }
+          const photo = typeof item.photo === 'string' ? item.photo : '';
+          if (photo && (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo) || photo.length > 250000)) {
+            throw new Error('Researcher photo must be a JPEG image under 180 KB.');
+          }
+          return name ? { name, degree, ...(age !== undefined ? { age } : {}), photo } : null;
         })
         .filter(Boolean)
     : [input.researcher1, input.researcher2]
