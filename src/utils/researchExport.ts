@@ -2,7 +2,12 @@ import type { ResearchEntry, ResearchLocation } from '../types/research';
 
 const EXPORT_MAP_STYLE = 'mapbox://styles/mapbox/streets-v12';
 // Keep each export close to the location whose Export button was clicked.
-const EXPORT_MAP_CAMERA = { zoom: 18, pitch: 0, bearing: 0 };
+export type ExportMapView = '2d' | '3d';
+const exportMapCamera = (view: ExportMapView) => ({
+  zoom: 18,
+  pitch: view === '3d' ? 70 : 0,
+  bearing: view === '3d' ? 40 : 0,
+});
 
 function escapeHtml(value: string) {
   return value
@@ -46,8 +51,10 @@ function buildExportHtml(
   research: ResearchEntry,
   relatedLocations: ResearchLocation[],
   currentLocation: ResearchLocation,
-  accessToken: string
+  accessToken: string,
+  view: ExportMapView
 ) {
+  const camera = exportMapCamera(view);
   const printTitle = `${research.title} Research Map`;
   const title = escapeHtml(research.title);
   const locationLabel = escapeHtml(buildLocationsLabel(relatedLocations));
@@ -391,9 +398,9 @@ function buildExportHtml(
                    container: 'export-map',
                    style: ${JSON.stringify(EXPORT_MAP_STYLE)},
                    center: [${currentLocation.longitude}, ${currentLocation.latitude}],
-                   zoom: ${EXPORT_MAP_CAMERA.zoom},
-                   pitch: ${EXPORT_MAP_CAMERA.pitch},
-                   bearing: ${EXPORT_MAP_CAMERA.bearing},
+                   zoom: ${camera.zoom},
+                   pitch: ${camera.pitch},
+                   bearing: ${camera.bearing},
                    interactive: false,
                    attributionControl: false,
                    preserveDrawingBuffer: true
@@ -566,7 +573,8 @@ export async function exportResearchMapJpg(
   research: ResearchEntry,
   currentLocation: ResearchLocation,
   locations: ResearchLocation[],
-  accessToken: string
+  accessToken: string,
+  view: ExportMapView = '2d'
 ) {
   if (!accessToken) throw new Error('A Mapbox token is required to export the map.');
   const { default: mapboxgl } = await import('mapbox-gl');
@@ -582,7 +590,7 @@ export async function exportResearchMapJpg(
       accessToken,
       style: EXPORT_MAP_STYLE,
       center: [currentLocation.longitude, currentLocation.latitude],
-      ...EXPORT_MAP_CAMERA,
+      ...exportMapCamera(view),
       interactive: false,
       attributionControl: false,
       preserveDrawingBuffer: true,
@@ -649,7 +657,17 @@ export async function exportResearchMapJpg(
     const scaleX = canvas.width / mapBounds.width;
     const scaleY = canvas.height / mapBounds.height;
     related.forEach((location) => {
-      const projected = exportMap.project([location.longitude, location.latitude]);
+      // Native markers account for terrain elevation in tilted views.
+      const element = document.createElement('div');
+      element.style.cssText = 'width:2px;height:2px;';
+      const marker = new mapboxgl.Marker({ element, anchor: 'center' })
+        .setLngLat([location.longitude, location.latitude]).addTo(exportMap);
+      const markerBounds = element.getBoundingClientRect();
+      const projected = {
+        x: markerBounds.left - mapBounds.left + markerBounds.width / 2,
+        y: markerBounds.top - mapBounds.top + markerBounds.height / 2,
+      };
+      marker.remove();
       const point = { x: projected.x * scaleX, y: projected.y * scaleY };
       context.beginPath();
       context.arc(point.x, point.y, 12, 0, Math.PI * 2);
@@ -677,7 +695,7 @@ export async function exportResearchMapJpg(
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${sanitizeFilename(research.title)}-map-hd.jpg`;
+    link.download = `${sanitizeFilename(research.title)}-map-${view}-hd.jpg`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -692,10 +710,11 @@ export function exportResearchMap(
   research: ResearchEntry,
   currentLocation: ResearchLocation,
   locations: ResearchLocation[],
-  accessToken: string
+  accessToken: string,
+  view: ExportMapView = '2d'
 ) {
   const relatedLocations = getRelatedLocations(research, currentLocation, locations);
-  const exportHtml = buildExportHtml(research, relatedLocations, currentLocation, accessToken);
+  const exportHtml = buildExportHtml(research, relatedLocations, currentLocation, accessToken, view);
   const exportBlob = new Blob([exportHtml], { type: 'text/html' });
   const exportUrl = URL.createObjectURL(exportBlob);
   const exportWindow = window.open(exportUrl, '_blank');
@@ -710,7 +729,7 @@ export function exportResearchMap(
     'load',
     () => {
       try {
-        exportWindow.document.title = `${sanitizeFilename(research.title)}.pdf`;
+        exportWindow.document.title = `${sanitizeFilename(research.title)}-${view}.pdf`;
       } catch {
         // Ignore cross-document timing issues while the new window initializes.
       }

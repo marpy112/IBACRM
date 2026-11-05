@@ -254,13 +254,13 @@ export default function AdminDashboard({
     }
   };
 
-  const handleExportJpg = async (location: ResearchLocation, research: ResearchLocation['researches'][number]) => {
+  const handleExportJpg = async (location: ResearchLocation, research: ResearchLocation['researches'][number], view: '2d' | '3d') => {
     if (exportingJpg) return;
     setExportingJpg(true);
     setError('');
     setSuccess('');
     try {
-      await exportResearchMapJpg(research, location, locations, mapboxAccessToken);
+      await exportResearchMapJpg(research, location, locations, mapboxAccessToken, view);
       setSuccess(`HD JPG download started for "${research.title}".`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to export JPG');
@@ -269,12 +269,12 @@ export default function AdminDashboard({
     }
   };
 
-  const handleExportResearch = (location: ResearchLocation, research: ResearchLocation['researches'][number]) => {
+  const handleExportResearch = (location: ResearchLocation, research: ResearchLocation['researches'][number], view: '2d' | '3d') => {
     setError('');
     setSuccess('');
 
     try {
-      exportResearchMap(research, location, locations, mapboxAccessToken);
+      exportResearchMap(research, location, locations, mapboxAccessToken, view);
       setSuccess(`Export preview opened for "${research.title}".`);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -570,22 +570,26 @@ export default function AdminDashboard({
                             <div className="research-card-header">
                               <h4>{research.title}</h4>
                               <div className="export-actions">
+                              {(['2d', '3d'] as const).map((view) => (
+                              <div className="export-actions" key={view}>
                               <button
                                 type="button"
                                 className="export-button"
-                                onClick={() => handleExportResearch(location, research)}
+                                onClick={() => handleExportResearch(location, research, view)}
                               >
-                                Export report
+                                {view === '3d' ? '3D (Tilt)' : '2D'} PDF
                               </button>
                               <button
                                 type="button"
                                 className="export-button"
                                 disabled={exportingJpg}
-                                onClick={() => handleExportJpg(location, research)}
+                                onClick={() => handleExportJpg(location, research, view)}
                                 title="Download only the map as a 2560 × 1440 JPG"
                               >
-                                {exportingJpg ? 'Rendering JPG…' : 'Map JPG (HD)'}
+                                {exportingJpg ? 'Rendering JPG…' : `${view === '3d' ? '3D (Tilt)' : '2D'} JPG (HD)`}
                               </button>
+                              </div>
+                              ))}
                               </div>
                             </div>
                             <p>{research.description}</p>
