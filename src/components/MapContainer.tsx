@@ -13,6 +13,7 @@ import Map, {
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { ResearchLocation } from '../types/research';
 import { Icon } from './Icon';
+import { StudyDocument } from './StudyDocument';
 import './MapContainer.css';
 
 export interface MapContainerProps {
@@ -29,6 +30,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   searchTerm = '',
 }) => {
   const [popupInfo, setPopupInfo] = useState<ResearchLocation | null>(null);
+  const [documentStudy, setDocumentStudy] = useState<{
+    study: ResearchLocation['researches'][number];
+    locationName: string;
+  } | null>(null);
   const [highlightedLocationIds, setHighlightedLocationIds] = useState<string[]>([]);
   const [activeResearchId, setActiveResearchId] = useState<string | null>(null);
   const [activeResearchIndex, setActiveResearchIndex] = useState(0);
@@ -622,7 +627,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
                     <button
                       type="button"
                       className="popup-research-title"
-                      onClick={() => handleResearchHighlight(activeResearch)}
+                      onClick={() => setDocumentStudy({ study: activeResearch, locationName: popupInfo.name })}
                     >
                       {activeResearch.title}
                     </button>
@@ -639,6 +644,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
                     {activeResearch.locationIds && activeResearch.locationIds.length > 1 && (
                       <p className="linked-location-note">
                         Shared across {activeResearch.locationIds.length} locations
+                        {' '}
+                        <button type="button" className="popup-slider-button" onClick={() => handleResearchHighlight(activeResearch)}>
+                          Show linked locations
+                        </button>
                       </p>
                     )}
                   </article>
@@ -648,6 +657,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           </Popup>
         )}
       </Map>
+      {documentStudy && (
+        <StudyDocument
+          study={documentStudy.study}
+          locationName={documentStudy.locationName}
+          onClose={() => setDocumentStudy(null)}
+        />
+      )}
     </div>
   );
 };

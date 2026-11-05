@@ -1,0 +1,49 @@
+.study-document-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(860px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--page);
+  color: var(--ink);
+  overflow-y: auto;
+  box-shadow: 0 24px 80px #21131b40;
+}
+.study-document-dialog::backdrop { background: #21131b99; }
+.study-document-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--muted);
+}
+.study-document-toolbar button {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+  color: var(--brand);
+}
+.study-document-page { margin: 24px; padding: 48px; background: white; border: 1px solid var(--line); }
+.study-document-page header { padding-bottom: 28px; border-bottom: 2px solid var(--brand); }
+.study-document-page h1 { margin: 20px 0; font: 600 30px/1.35 Georgia, serif; color: var(--brand-dark); overflow-wrap: anywhere; }
+.study-document-location { font-size: 14px; color: var(--muted); }
+.study-document-page section { margin-top: 32px; }
+.study-document-page h2 { margin-bottom: 16px; font: 600 22px Georgia, serif; color: var(--brand-dark); }
+.study-document-overview { white-space: pre-wrap; overflow-wrap: anywhere; font: 17px/1.85 Georgia, serif; }
+.study-document-page ul { padding-left: 20px; font-size: 14px; line-height: 1.8; }
+@media (max-width: 600px) {
+  .study-document-page { margin: 12px; padding: 24px 20px; }
+  .study-document-page h1 { font-size: 24px; }
+  .study-document-toolbar { padding: 12px; }
+}
