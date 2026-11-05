@@ -264,8 +264,10 @@ function buildExportHtml(
                var markers = [];
                var errorNode = document.getElementById('export-map-error');
 
-               function triggerPrint() {
+               async function triggerPrint() {
                  if (printed) return;
+                 printed = true;
+                 try {
                  // Freeze the map and markers in one image before print layout changes.
                  if (mapLoaded) {
                    var source = map.getCanvas();
@@ -295,12 +297,22 @@ function buildExportHtml(
                    var image = document.createElement('img');
                    image.src = snapshot.toDataURL('image/png');
                    image.style.cssText = 'display:block;width:100%;height:100%;';
+                   image.alt = 'Research location map';
+                   // Printing before decoding can produce an empty map frame.
+                   await image.decode();
                    map.getContainer().replaceWith(image);
                    map.remove();
                  }
-                 printed = true;
+                 await document.fonts.ready;
+                 await new Promise(function (resolve) {
+                   requestAnimationFrame(function () { requestAnimationFrame(resolve); });
+                 });
                  window.focus();
                  window.print();
+                 } catch (error) {
+                   printed = false;
+                   showError();
+                 }
                }
 
                function showError() {
@@ -537,8 +549,8 @@ function buildExportHtml(
                  });
 
                  map.on('error', function () {
-                   showError();
-                   window.setTimeout(triggerPrint, 300);
+                   // Optional tile failures must not print an unfinished 3D frame.
+                   if (!mapLoaded) showError();
                  });
 
                  window.setTimeout(function () {
@@ -546,7 +558,7 @@ function buildExportHtml(
                      showError();
                      triggerPrint();
                    }
-                 }, 5000);
+                 }, 45000);
                } catch (error) {
                  showError();
                  window.setTimeout(triggerPrint, 300);
