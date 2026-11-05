@@ -12,24 +12,26 @@ import Map, {
 } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { ResearchLocation } from '../types/research';
+import { Icon } from './Icon';
 import './MapContainer.css';
 
 export interface MapContainerProps {
   accessToken: string;
   locations?: ResearchLocation[];
   selectedLocationId?: string | null;
+  searchTerm?: string;
 }
 
 export const MapContainer: React.FC<MapContainerProps> = ({
   accessToken,
   locations = [],
   selectedLocationId,
+  searchTerm = '',
 }) => {
   const [popupInfo, setPopupInfo] = useState<ResearchLocation | null>(null);
   const [highlightedLocationIds, setHighlightedLocationIds] = useState<string[]>([]);
   const [activeResearchId, setActiveResearchId] = useState<string | null>(null);
   const [activeResearchIndex, setActiveResearchIndex] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
   const [viewState, setViewState] = useState({
     longitude: 125.0,
     latitude: 8.5,
@@ -38,6 +40,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     bearing: 40,
   });
   const mapRef = React.useRef<MapRef | null>(null);
+
+  useEffect(() => {
+    setHighlightedLocationIds([]);
+    setPopupInfo(null);
+    setActiveResearchId(null);
+  }, [searchTerm]);
 
   const filteredLocations = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -349,12 +357,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     }
   };
 
-  const handleLocationFocus = (location: ResearchLocation) => {
-    setActiveResearchId(null);
-    setActiveResearchIndex(0);
-    focusLocations([location], location);
-  };
-
   const handleResearchHighlight = (research: ResearchLocation['researches'][number]) => {
     const locationIds = research.locationIds?.length ? research.locationIds : popupInfo ? [popupInfo.id] : [];
     const targetLocations = locations.filter((location) => locationIds.includes(location.id));
@@ -400,37 +402,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   };
 
   return (
-    <div className="map-wrapper">
-      <div className="map-search-panel">
-        <input
-          type="search"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          className="map-search-input"
-          placeholder="Search every location, research, or researcher"
-        />
-        {searchTerm.trim() && (
-          <div className="map-search-results">
-            {visibleLocations.length === 0 ? (
-              <p className="map-search-empty">No matching locations found.</p>
-            ) : (
-              visibleLocations.map((location) => (
-                <button
-                  key={location.id}
-                  type="button"
-                  className="map-search-result"
-                  onClick={() => handleLocationFocus(location)}
-                >
-                  <span>{location.name}</span>
-                  <small>
-                    {location.researches.length} research{location.researches.length !== 1 ? 'es' : ''}
-                  </small>
-                </button>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+    <div className={`map-wrapper ${popupInfo ? 'has-popup' : ''}`}>
+      <div className="map-context"><span className="status-dot" /> Mindanao, Philippines <span>Research explorer</span></div>
 
       <Map
         {...viewState}
@@ -593,7 +566,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
                   {highlightedLocationIds.includes(location.id) && (
                     <span className="marker-location-label">{location.name}</span>
                   )}
-                  <div className="marker-icon">{isSelected ? '*' : 'o'}</div>
+                  <div className="marker-icon"><Icon name="pin" width={16} height={16} /></div>
                   <span className="marker-count">{location.researches.length}</span>
                 </div>
               </button>

@@ -2,6 +2,7 @@ require('./loadEnv');
 const express = require('express');
 const mongoose = require('mongoose');
 const { createCorsMiddleware } = require('./corsConfig');
+const { connectDatabase } = require('./database');
 
 const Admin = require('./models/Admin');
 const Location = require('./models/Location');
@@ -9,10 +10,22 @@ const { buildResearchEntry, normalizeLocation, slugify } = require('./locationUt
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const MONGODB_URI = process.env.MONGODB_URI;
 
 app.use(createCorsMiddleware());
 app.use(express.json());
+app.use('/api', async (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    await connectDatabase();
+    next();
+  } catch {
+    res.status(503).json({
+      status: 'Database unavailable',
+      mongodb: false,
+      error: 'Database connection unavailable. Please try again shortly.',
+    });
+  }
+});
 
 function escapeRegex(value = '') {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -143,31 +156,14 @@ function getDefaultLocations() {
   ];
 }
 
-if (!MONGODB_URI) {
-  console.error('MONGODB_URI not defined in .env file');
-  process.exit(1);
+if (require.main === module) {
+  connectDatabase()
+    .then(() => initializeDatabase())
+    .catch(() => console.error('Database initialization failed. Check MONGODB_URI and database access.'))
+    .finally(() => {
+      app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
+    });
 }
-
-mongoose.connect(MONGODB_URI, {
-  retryWrites: true,
-  w: 'majority',
-  serverSelectionTimeoutMS: 10000,
-})
-  .then(() => {
-    initializeDatabase().catch((err) =>
-      console.error('Error initializing database:', err.message)
-    );
-
-    app.listen(PORT, () => {
-      console.log(`Backend server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('MongoDB connection failed:', err.message);
-    app.listen(PORT, () => {
-      console.log(`Backend server running on http://localhost:${PORT}`);
-    });
-  });
 
 async function initializeDatabase() {
   const adminCount = await Admin.countDocuments().catch(() => -1);
@@ -472,7 +468,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
+
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
+
+module.exports = app;

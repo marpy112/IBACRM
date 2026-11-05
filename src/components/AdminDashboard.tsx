@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Icon } from './Icon';
 import { addLocation, addResearchToLocations, deleteLocation } from '../services/api';
 import MapPicker from './MapPicker';
 import AccountManagement from './AccountManagement';
 import type { ResearchLocation, ResearcherEntry } from '../types/research';
-import { exportResearchMap } from '../utils/researchExport';
+import { exportResearchMap, exportResearchMapJpg } from '../utils/researchExport';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -55,10 +57,24 @@ export default function AdminDashboard({
   mapboxAccessToken,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'locations' | 'accounts'>('locations');
+  const [editorTab, setEditorTab] = useState<'location' | 'study'>('location');
+  const studies = useMemo(() => [...new Map(locations.flatMap((location) => location.researches).map((research) => [research.id, research])).values()], [locations]);
+  const researcherCount = new Set(studies.flatMap((research) => research.researchers.map((researcher) => researcher.name.trim().toLowerCase()))).size;
   const [locationForm, setLocationForm] = useState<LocationFormState>(EMPTY_LOCATION_FORM);
   const [researchForm, setResearchForm] = useState<ResearchFormState>(EMPTY_RESEARCH_FORM);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [studySearch, setStudySearch] = useState('');
+  const [exportingJpg, setExportingJpg] = useState(false);
+  const studyQuery = studySearch.trim().toLowerCase();
+  const visibleLocations = useMemo(() => locations.map((location) => ({
+    location,
+    studies: location.researches.filter((research) =>
+      `${location.name} ${research.title} ${research.description} ${research.researchers
+        .map((researcher) => `${researcher.name} ${researcher.degree}`)
+        .join(' ')}`.toLowerCase().includes(studyQuery)
+    ),
+  })).filter(({ studies }) => !studyQuery || studies.length > 0), [locations, studyQuery]);
 
   const selectedLocationNames = useMemo(
     () =>
@@ -238,6 +254,21 @@ export default function AdminDashboard({
     }
   };
 
+  const handleExportJpg = async (location: ResearchLocation, research: ResearchLocation['researches'][number]) => {
+    if (exportingJpg) return;
+    setExportingJpg(true);
+    setError('');
+    setSuccess('');
+    try {
+      await exportResearchMapJpg(research, location, locations, mapboxAccessToken);
+      setSuccess(`HD JPG download started for "${research.title}".`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export JPG');
+    } finally {
+      setExportingJpg(false);
+    }
+  };
+
   const handleExportResearch = (location: ResearchLocation, research: ResearchLocation['researches'][number]) => {
     setError('');
     setSuccess('');
@@ -255,37 +286,57 @@ export default function AdminDashboard({
     <div className="admin-dashboard">
       <div className="admin-header">
         <div className="admin-header-content">
-          <h1>Admin Dashboard</h1>
-          <p className="admin-email">Logged in as: {adminEmail}</p>
+          <p className="eyebrow">Administration</p>
+          <h1>{activeTab === 'locations' ? 'Research workspace' : 'Account management'}</h1>
         </div>
-        <button onClick={onLogout} className="logout-button">
-          Logout
-        </button>
+        <div className="admin-profile"><span className="profile-avatar">{adminEmail.charAt(0).toUpperCase()}</span><div><strong>Administrator</strong><p className="admin-email">{adminEmail}</p></div></div>
       </div>
 
-      <div className="admin-tabs">
+      <nav className="admin-tabs" aria-label="Admin navigation">
+        <Link to="/" className="admin-brand"><img src="/iba-logo.png" alt="IBA College of Mindanao" /><span>Research Atlas<small>IBA College of Mindanao</small></span></Link>
+        <p className="nav-label">Workspace</p>
         <button
           className={`tab-button ${activeTab === 'locations' ? 'active' : ''}`}
           onClick={() => setActiveTab('locations')}
+          aria-current={activeTab === 'locations' ? 'page' : undefined}
         >
-          Locations
+          <Icon name="book" /> Research & locations
         </button>
         <button
           className={`tab-button ${activeTab === 'accounts' ? 'active' : ''}`}
           onClick={() => setActiveTab('accounts')}
+          aria-current={activeTab === 'accounts' ? 'page' : undefined}
         >
-          User Management
+          <Icon name="users" /> User management
         </button>
-      </div>
+        <div className="admin-nav-footer">
+          <Link to="/" className="tab-button"><Icon name="map" /> View public map <Icon name="arrow" width={16} height={16} /></Link>
+          <button onClick={onLogout} className="tab-button"><Icon name="logout" /> Sign out</button>
+          <p>Knowledge connected to place.</p>
+        </div>
+      </nav>
 
       <div className="admin-container">
+        {activeTab === 'locations' && <>
+          <div className="workspace-intro"><div><h2>Your research, at a glance.</h2><p>Manage study locations, connect researchers, and share your findings.</p></div><Link to="/" className="text-link">Explore the map <Icon name="arrow" width={16} height={16} /></Link></div>
+          <div className="admin-stats">
+            <div><span className="stat-icon"><Icon name="pin" /></span><p>Research locations<strong>{locations.length}</strong></p><span className="stat-caption">Across the map</span></div>
+            <div><span className="stat-icon"><Icon name="book" /></span><p>Registered studies<strong>{studies.length}</strong></p><span className="stat-caption">In your collection</span></div>
+            <div><span className="stat-icon"><Icon name="users" /></span><p>Researchers<strong>{researcherCount}</strong></p><span className="stat-caption">Contributing knowledge</span></div>
+          </div>
+        </>}
+        {error && <div className="admin-error" role="alert">{error}</div>}
+        {success && <div className="admin-success" role="status">{success}</div>}
         {activeTab === 'locations' && (
           <div className="tab-content">
             <div className="add-location-section">
-              <h2>Add Location</h2>
-
-              {error && <div className="admin-error">{error}</div>}
-              {success && <div className="admin-success">{success}</div>}
+              <div className="editor-tabs" aria-label="Choose what to add">
+                <button className={editorTab === 'location' ? 'active' : ''} onClick={() => setEditorTab('location')} aria-pressed={editorTab === 'location'}><Icon name="pin" width={16} height={16} /> Add location</button>
+                <button className={editorTab === 'study' ? 'active' : ''} onClick={() => setEditorTab('study')} aria-pressed={editorTab === 'study'}><Icon name="plus" width={16} height={16} /> Add study</button>
+              </div>
+              <div hidden={editorTab !== 'location'}>
+              <h2>A new point of discovery</h2>
+              <p className="section-description">Pin a location on the map, then add its details.</p>
 
               <MapPicker
                 latitude={locationForm.latitude}
@@ -355,9 +406,11 @@ export default function AdminDashboard({
                   Create Location
                 </button>
               </form>
+              </div>
 
-              <div className="admin-form form-section-gap">
-                <h2>Add Research</h2>
+              <div className="admin-form form-section-gap" hidden={editorTab !== 'study'}>
+                <h2>Add to the collection</h2>
+                <p className="section-description">Connect a study to one or more research locations.</p>
                 <form onSubmit={handleResearchSubmit}>
                   <div className="form-group">
                     <label>Choose One or More Locations *</label>
@@ -421,12 +474,14 @@ export default function AdminDashboard({
                         <div className="researcher-row" key={`researcher-${index}`}>
                           <input
                             type="text"
+                            aria-label={`Researcher ${index + 1} name`}
                             value={researcher.name}
                             onChange={(event) => handleResearcherChange(index, 'name', event.target.value)}
                             placeholder={`Researcher ${index + 1} name`}
                           />
                           <input
                             type="text"
+                            aria-label={`Researcher ${index + 1} degree`}
                             value={researcher.degree}
                             onChange={(event) => handleResearcherChange(index, 'degree', event.target.value)}
                             placeholder="Degree"
@@ -454,13 +509,33 @@ export default function AdminDashboard({
             </div>
 
             <div className="locations-list-section">
-              <h2>Research Locations ({locations.length})</h2>
+              <div className="collection-heading"><div><p className="eyebrow">Your collection</p><h2>Research locations</h2></div><span className="count-badge">{locations.length} locations</span></div>
+              <div className="form-group study-search">
+                <label htmlFor="admin-study-search">Search studies</label>
+                <input
+                  id="admin-study-search"
+                  type="search"
+                  value={studySearch}
+                  onChange={(event) => setStudySearch(event.target.value)}
+                  placeholder="Title, description, researcher, or location"
+                />
+                {studySearch && (
+                  <button type="button" className="secondary-button" onClick={() => setStudySearch('')}>
+                    Clear search
+                  </button>
+                )}
+              </div>
+              <p className="form-hint" role="status">
+                {studyQuery && `${visibleLocations.reduce((count, { studies }) => count + studies.length, 0)} matching study entries across ${visibleLocations.length} locations`}
+              </p>
 
               {locations.length === 0 ? (
                 <p className="no-locations">No locations added yet. Add one using the form above.</p>
+              ) : visibleLocations.length === 0 ? (
+                <p className="no-locations">No studies match your search. Try another keyword.</p>
               ) : (
                 <div className="locations-grid">
-                  {locations.map((location) => (
+                  {visibleLocations.map(({ location, studies }) => (
                     <div key={location.id} className="location-card">
                       <div className="location-card-header">
                         <div>
@@ -474,6 +549,7 @@ export default function AdminDashboard({
                           onClick={() => handleDelete(location.id)}
                           className="delete-button"
                           title="Delete location"
+                          aria-label={`Delete ${location.name}`}
                         >
                           x
                         </button>
@@ -489,17 +565,28 @@ export default function AdminDashboard({
                       </div>
 
                       <div className="research-list">
-                        {location.researches.map((research) => (
+                        {studies.map((research) => (
                           <article key={`${location.id}-${research.id}`} className="research-card">
                             <div className="research-card-header">
                               <h4>{research.title}</h4>
+                              <div className="export-actions">
                               <button
                                 type="button"
                                 className="export-button"
                                 onClick={() => handleExportResearch(location, research)}
                               >
-                                Export
+                                Export report
                               </button>
+                              <button
+                                type="button"
+                                className="export-button"
+                                disabled={exportingJpg}
+                                onClick={() => handleExportJpg(location, research)}
+                                title="Download only the map as a 2560 × 1440 JPG"
+                              >
+                                {exportingJpg ? 'Rendering JPG…' : 'Map JPG (HD)'}
+                              </button>
+                              </div>
                             </div>
                             <p>{research.description}</p>
                             <p>
@@ -527,7 +614,7 @@ export default function AdminDashboard({
         )}
 
         {activeTab === 'accounts' && (
-          <div className="tab-content">
+          <div className="tab-content accounts-content">
             <AccountManagement />
           </div>
         )}

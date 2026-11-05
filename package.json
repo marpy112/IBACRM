@@ -8,10 +8,10 @@
     "start": "node server/production.js",
     "dev:server": "cd server && npm run dev",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
-    "postinstall": "npm --prefix server install",
+    "postinstall": "cd server && npm ci --omit=dev",
     "build": "tsc -b && vite build",
     "build:frontend": "tsc -b && vite build",
-    "server:install": "cd server && npm install",
+    "server:install": "cd server && npm ci",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

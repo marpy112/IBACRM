@@ -1,7 +1,8 @@
 import type { ResearchEntry, ResearchLocation } from '../types/research';
 
-const MAP_IMAGE_SIZE = { width: 900, height: 900 };
 const EXPORT_MAP_STYLE = 'mapbox://styles/mapbox/streets-v12';
+// Keep each export close to the location whose Export button was clicked.
+const EXPORT_MAP_CAMERA = { zoom: 18, pitch: 70, bearing: 40 };
 
 function escapeHtml(value: string) {
   return value
@@ -33,49 +34,6 @@ function getRelatedLocations(
   return related.length > 0 ? related : [currentLocation];
 }
 
-function getMapCenter(locations: ResearchLocation[]) {
-  const total = locations.reduce(
-    (accumulator, location) => ({
-      latitude: accumulator.latitude + location.latitude,
-      longitude: accumulator.longitude + location.longitude,
-    }),
-    { latitude: 0, longitude: 0 }
-  );
-
-  return {
-    latitude: total.latitude / locations.length,
-    longitude: total.longitude / locations.length,
-  };
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function getExpandedSpan(span: number, minimumSpan: number) {
-  if (span <= 0) {
-    return minimumSpan;
-  }
-
-  return Math.max(span * 1.8, minimumSpan);
-}
-
-function getMapZoom(locations: ResearchLocation[]) {
-  const latitudes = locations.map((location) => location.latitude);
-  const longitudes = locations.map((location) => location.longitude);
-  const latSpan = getExpandedSpan(Math.max(...latitudes) - Math.min(...latitudes), 0.02);
-  const lngSpan = getExpandedSpan(Math.max(...longitudes) - Math.min(...longitudes), 0.02);
-
-  const lngZoom = Math.log2((360 * MAP_IMAGE_SIZE.width) / (lngSpan * 256));
-  const latZoom = Math.log2((170 * MAP_IMAGE_SIZE.height) / (latSpan * 256));
-
-  // Dynamic zoom based on number of locations
-  const minZoom = locations.length === 1 ? 16 : 8.5;
-  const maxZoom = 20;
-
-  return clamp(Math.min(lngZoom, latZoom), minZoom, maxZoom);
-}
-
 function buildResearchersLabel(research: ResearchEntry) {
   return research.researchers.map((researcher) => researcher.name).join(', ');
 }
@@ -87,15 +45,13 @@ function buildLocationsLabel(locations: ResearchLocation[]) {
 function buildExportHtml(
   research: ResearchEntry,
   relatedLocations: ResearchLocation[],
+  currentLocation: ResearchLocation,
   accessToken: string
 ) {
   const printTitle = `${research.title} Research Map`;
   const title = escapeHtml(research.title);
-  const description = escapeHtml(research.description);
   const locationLabel = escapeHtml(buildLocationsLabel(relatedLocations));
   const researchersLabel = escapeHtml(buildResearchersLabel(research));
-  const center = getMapCenter(relatedLocations);
-  const zoom = getMapZoom(relatedLocations);
   const mapLocationsJson = JSON.stringify(
     relatedLocations.map((location) => ({
       id: location.id,
@@ -116,14 +72,15 @@ function buildExportHtml(
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: "Times New Roman", serif;
+        font-family: "Bookman Old Style", "Bookman", serif;
         color: #111;
         background: #fff;
       }
       .sheet {
-        width: 1000px;
+        width: 8.5in;
+        min-height: 11in;
         margin: 0 auto;
-        padding: 24px 24px 18px;
+        padding: 1in 1in 1in 1.5in;
       }
       .map-title {
         font-size: 20px;
@@ -136,7 +93,8 @@ function buildExportHtml(
       }
       .map-frame {
         border: 2px solid #222;
-        height: 820px;
+        height: 4.75in;
+        break-inside: avoid;
         overflow: hidden;
         background: #fafafa;
         position: relative;
@@ -160,11 +118,14 @@ function buildExportHtml(
         margin-top: 18px;
         border: 2px solid #222;
         display: grid;
-        grid-template-columns: 1.25fr 1.35fr 1fr 1.4fr;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1.4fr);
+        break-inside: avoid;
       }
       .footer-cell {
         min-height: 120px;
-        padding: 14px 16px;
+        min-width: 0;
+        padding: 8px;
+        overflow-wrap: anywhere;
         border-right: 2px solid #222;
       }
       .footer-cell:last-child {
@@ -209,7 +170,8 @@ function buildExportHtml(
         gap: 10px;
       }
       .legend-line {
-        width: 28px;
+        width: 20px;
+        flex-shrink: 0;
         height: 4px;
         border-radius: 999px;
       }
@@ -228,15 +190,9 @@ function buildExportHtml(
       .legend-line-park {
         background: #a6d96a;
       }
-      .description {
-        margin-top: 10px;
-        font-size: 12px;
-        color: #444;
-        line-height: 1.35;
-      }
       @page {
-        size: A4 portrait;
-        margin: 10mm;
+        size: letter portrait;
+        margin: 1in 1in 1in 1.5in;
       }
       @media print {
         body {
@@ -244,12 +200,10 @@ function buildExportHtml(
           print-color-adjust: exact;
         }
         .sheet {
-          width: auto;
+          width: 6in;
+          min-height: 0;
           margin: 0;
           padding: 0;
-        }
-        .map-frame {
-          height: 730px;
         }
       }
     </style>
@@ -274,7 +228,6 @@ function buildExportHtml(
         <div class="footer-cell">
           <h2 class="footer-title">Title of Research</h2>
           <p class="footer-text">${title}</p>
-          <p class="description">${description}</p>
         </div>
         <div class="footer-cell">
           <h2 class="footer-title">Legend</h2>
@@ -404,10 +357,10 @@ function buildExportHtml(
                  var map = new mapboxgl.Map({
                    container: 'export-map',
                    style: ${JSON.stringify(EXPORT_MAP_STYLE)},
-                   center: [${center.longitude}, ${center.latitude}],
-                   zoom: ${zoom},
-                   pitch: 70,
-                   bearing: 40,
+                   center: [${currentLocation.longitude}, ${currentLocation.latitude}],
+                   zoom: ${EXPORT_MAP_CAMERA.zoom},
+                   pitch: ${EXPORT_MAP_CAMERA.pitch},
+                   bearing: ${EXPORT_MAP_CAMERA.bearing},
                    interactive: false,
                    attributionControl: false,
                    preserveDrawingBuffer: true
@@ -499,6 +452,8 @@ function buildExportHtml(
                      markerWrapper.style.gap = '8px';
                      markerWrapper.style.zIndex = '9999';
                      markerWrapper.style.position = 'relative';
+                     markerWrapper.style.width = '24px';
+                     markerWrapper.style.height = '24px';
 
                      var markerNode = document.createElement('div');
                      markerNode.style.width = '24px';
@@ -511,12 +466,16 @@ function buildExportHtml(
 
                      var labelNode = document.createElement('div');
                      labelNode.textContent = location.name;
+                     labelNode.style.position = 'absolute';
+                     labelNode.style.left = '32px';
+                     labelNode.style.top = '50%';
+                     labelNode.style.transform = 'translateY(-50%)';
                      labelNode.style.padding = '6px 12px';
                      labelNode.style.background = 'rgba(139, 0, 0, 0.95)';
                      labelNode.style.border = '2px solid #ffffff';
                      labelNode.style.borderRadius = '4px';
                      labelNode.style.color = '#ffffff';
-                     labelNode.style.fontFamily = '"Arial", sans-serif';
+                     labelNode.style.fontFamily = '"Bookman Old Style", "Bookman", serif';
                      labelNode.style.fontSize = '12px';
                      labelNode.style.fontWeight = '700';
                      labelNode.style.lineHeight = '1.2';
@@ -526,12 +485,19 @@ function buildExportHtml(
                      markerWrapper.appendChild(markerNode);
                      markerWrapper.appendChild(labelNode);
 
-                     new mapboxgl.Marker({ element: markerWrapper, anchor: 'left' })
+                     new mapboxgl.Marker({ element: markerWrapper, anchor: 'center' })
                        .setLngLat([location.longitude, location.latitude])
                        .addTo(map);
                    });
 
-                   window.setTimeout(triggerPrint, 1400);
+                   map.resize();
+                   map.jumpTo({ center: [${currentLocation.longitude}, ${currentLocation.latitude}] });
+                   map.once('idle', triggerPrint);
+                 });
+
+                 window.addEventListener('beforeprint', function () {
+                   map.resize();
+                   map.jumpTo({ center: [${currentLocation.longitude}, ${currentLocation.latitude}] });
                  });
 
                  map.on('error', function () {
@@ -567,6 +533,127 @@ function buildExportHtml(
 </html>`;
 }
 
+export async function exportResearchMapJpg(
+  research: ResearchEntry,
+  currentLocation: ResearchLocation,
+  locations: ResearchLocation[],
+  accessToken: string
+) {
+  if (!accessToken) throw new Error('A Mapbox token is required to export the map.');
+  const { default: mapboxgl } = await import('mapbox-gl');
+  const related = getRelatedLocations(research, currentLocation, locations);
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-10000px;top:0;width:2560px;height:1440px;pointer-events:none;';
+  container.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(container);
+  let map: InstanceType<typeof mapboxgl.Map> | undefined;
+  try {
+    map = new mapboxgl.Map({
+      container,
+      accessToken,
+      style: EXPORT_MAP_STYLE,
+      center: [currentLocation.longitude, currentLocation.latitude],
+      ...EXPORT_MAP_CAMERA,
+      interactive: false,
+      attributionControl: false,
+      preserveDrawingBuffer: true,
+      fadeDuration: 0,
+    });
+    const exportMap = map;
+    await new Promise<void>((resolve, reject) => {
+      const timeout = window.setTimeout(() => finish(new Error('Map export timed out. Please try again.')), 45000);
+      const onIdle = () => finish();
+      const onError = () => finish(new Error('Could not load the map. Check your connection and Mapbox token.'));
+      const onLoad = () => {
+        try {
+          exportMap.addSource('export-dem', {
+            type: 'raster-dem',
+            url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+            tileSize: 512,
+          });
+          exportMap.setTerrain({ source: 'export-dem', exaggeration: 1.5 });
+          exportMap.addLayer({
+            id: 'export-sky',
+            type: 'sky',
+            paint: { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 0.3 },
+          });
+          const labelLayer = exportMap.getStyle().layers.find((layer) => layer.type === 'symbol')?.id;
+          exportMap.addLayer({
+            id: 'export-3d-buildings',
+            source: 'composite',
+            'source-layer': 'building',
+            filter: ['==', 'extrude', 'true'],
+            type: 'fill-extrusion',
+            paint: {
+              'fill-extrusion-color': '#c9a876',
+              'fill-extrusion-height': ['*', ['coalesce', ['get', 'height'], 0], 1.3],
+              'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+              'fill-extrusion-opacity': 1,
+            },
+          }, labelLayer);
+        } catch {
+          finish(new Error('Could not render the 3D map. Please try exporting again.'));
+        }
+      };
+      function finish(error?: Error) {
+        window.clearTimeout(timeout);
+        exportMap.off('idle', onIdle);
+        exportMap.off('error', onError);
+        exportMap.off('load', onLoad);
+        if (error) reject(error);
+        else resolve();
+      }
+      exportMap.once('idle', onIdle);
+      exportMap.once('error', onError);
+      exportMap.once('load', onLoad);
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = 2560;
+    canvas.height = 1440;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Your browser could not create the JPG image.');
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(exportMap.getCanvas(), 0, 0, canvas.width, canvas.height);
+    related.forEach((location) => {
+      const point = exportMap.project([location.longitude, location.latitude]);
+      context.beginPath();
+      context.arc(point.x, point.y, 12, 0, Math.PI * 2);
+      context.fillStyle = '#8b0000';
+      context.fill();
+      context.strokeStyle = '#fff';
+      context.lineWidth = 4;
+      context.stroke();
+      context.font = 'bold 22px Arial';
+      context.lineWidth = 5;
+      context.strokeText(location.name, point.x + 22, point.y + 7);
+      context.fillText(location.name, point.x + 22, point.y + 7);
+    });
+    const attribution = '© Mapbox © OpenStreetMap';
+    context.font = '20px Arial';
+    const width = context.measureText(attribution).width;
+    context.fillStyle = 'rgba(255,255,255,0.9)';
+    context.fillRect(canvas.width - width - 24, canvas.height - 36, width + 24, 36);
+    context.fillStyle = '#333';
+    context.fillText(attribution, canvas.width - width - 12, canvas.height - 12);
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(
+      (value) => value ? resolve(value) : reject(new Error('Could not encode the JPG image.')),
+      'image/jpeg', 0.95
+    ));
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${sanitizeFilename(research.title)}-map-hd.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } finally {
+    map?.remove();
+    container.remove();
+  }
+}
+
 export function exportResearchMap(
   research: ResearchEntry,
   currentLocation: ResearchLocation,
@@ -574,7 +661,7 @@ export function exportResearchMap(
   accessToken: string
 ) {
   const relatedLocations = getRelatedLocations(research, currentLocation, locations);
-  const exportHtml = buildExportHtml(research, relatedLocations, accessToken);
+  const exportHtml = buildExportHtml(research, relatedLocations, currentLocation, accessToken);
   const exportBlob = new Blob([exportHtml], { type: 'text/html' });
   const exportUrl = URL.createObjectURL(exportBlob);
   const exportWindow = window.open(exportUrl, '_blank');

@@ -1,8 +1,8 @@
 import type { ResearchLocation, ResearcherEntry } from '../types/research';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ||
-  (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
+export const API_BASE_URL = import.meta.env.PROD
+  ? '/api'
+  : import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:3001/api';
 
 // ============ HEALTH CHECK ============
 

@@ -15,9 +15,14 @@
 
 .map-area {
   flex: 1;
+  display: flex;
+  min-height: 0;
   position: relative;
   overflow: hidden;
 }
+
+.app-container, #root { height: 100dvh; }
+@media (max-width: 760px) { .map-area { flex-direction: column-reverse; } }
 
 /* Setup screen for missing Mapbox token */
 .setup-container {

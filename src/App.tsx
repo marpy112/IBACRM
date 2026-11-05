@@ -6,7 +6,7 @@ import { MapContainer } from './components/MapContainer'
 import { LocationPanel } from './components/LocationPanel'
 import Login from './components/Login'
 import AdminDashboard from './components/AdminDashboard'
-import { fetchLocations } from './services/api'
+import { API_BASE_URL, fetchLocations } from './services/api'
 import { LoadingScreen } from './components/LoadingScreen'
 import { MINDANAO_RESEARCH_LOCATIONS } from './data/mindanaoLocations'
 import type { ResearchLocation } from './types/research'
@@ -21,7 +21,7 @@ function AppContent() {
 
     const checkDatabaseHealth = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api')}/health`, {
+        const response = await fetch(`${API_BASE_URL}/health`, {
           signal: AbortSignal.timeout(5000) // 5 second timeout
         });
 
@@ -84,6 +84,7 @@ function AppContent() {
 function MapView() {
   const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [locations, setLocations] = useState<ResearchLocation[]>(MINDANAO_RESEARCH_LOCATIONS)
 
   // Fetch locations from backend on mount
@@ -135,14 +136,18 @@ function MapView() {
     <div className="app-container">
       <Header />
       <div className="map-area">
-        <MapContainer 
-          accessToken={mapboxToken} 
-          locations={locations}
-          selectedLocationId={selectedLocationId}
-        />
         <LocationPanel
           locations={locations}
+          selectedLocationId={selectedLocationId}
+          searchTerm={searchTerm}
+          onSearchChange={(value) => { setSearchTerm(value); setSelectedLocationId(null); }}
           onLocationSelect={handleLocationSelect}
+        />
+        <MapContainer
+          accessToken={mapboxToken}
+          locations={locations}
+          selectedLocationId={selectedLocationId}
+          searchTerm={searchTerm}
         />
       </div>
     </div>

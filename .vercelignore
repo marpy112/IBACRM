@@ -1,0 +1,13 @@
+.git
+.env*
+**/.env*
+.vercel
+node_modules
+server/node_modules
+dist
+*.local
+**/*.local/**
+ui-check.local
+browser-check.local
+server/data
+server/*.test.js

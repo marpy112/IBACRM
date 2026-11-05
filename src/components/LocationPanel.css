@@ -1,145 +1,41 @@
-.location-panel {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  max-width: 350px;
-  transition: all 0.3s ease;
+.location-panel { width: 340px; flex: 0 0 340px; display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--line); z-index: 15; min-height: 0; }
+.directory-intro { padding: 30px 26px 24px; border-bottom: 1px solid var(--line); background: #fcfaf8; }
+.directory-intro h2 { font-family: Georgia, serif; font-size: 33px; font-weight: 400; line-height: 1.15; letter-spacing: -.9px; color: var(--brand-dark); margin: 13px 0; }
+.directory-intro > p:not(.eyebrow) { font-size: 13px; color: var(--muted); line-height: 1.7; }
+.directory-stats { display: flex; gap: 25px; margin-top: 22px; color: var(--muted); font-size: 12px; }
+.directory-stats strong { color: var(--ink); font-size: 20px; font-weight: 600; margin-right: 4px; }
+.panel-toggle { display: none; }
+.panel-content { display: flex; flex-direction: column; flex: 1; min-height: 0; padding-top: 18px; }
+.location-search-wrap { position: relative; margin: 0 20px; }
+.location-search-wrap > svg { position: absolute; top: 14px; left: 12px; color: var(--muted); }
+.location-search { width: 100%; padding: 13px 10px 13px 38px; border: 1px solid var(--line); background: #faf9f7; border-radius: 9px; font-size: 12px; }
+.location-search:focus { outline: 2px solid #c8929f; outline-offset: 1px; }
+.directory-results { display: flex; justify-content: space-between; align-items: center; min-height: 47px; padding: 12px 24px; font-size: 11px; color: var(--muted); }
+.directory-results button { border: 0; padding: 3px; color: var(--brand); background: none; font-size: 12px; }
+.locations-list { list-style: none; overflow-y: auto; padding: 0 12px 14px; }
+.location-item { margin-bottom: 5px; }
+.location-button { width: 100%; text-align: left; padding: 17px 12px; background: transparent; border: 1px solid transparent; border-radius: 10px; display: flex; flex-direction: column; gap: 9px; }
+.location-button:hover { background: #faf7f5; border-color: var(--line); }
+.location-button.is-selected { background: var(--brand-soft); border-color: #e5cbd1; }
+.location-name { display: flex; align-items: flex-start; gap: 8px; width: 100%; font-size: 13px; line-height: 1.5; font-weight: 600; color: var(--ink); }
+.location-name > svg { margin-top: 2px; color: var(--brand); }
+.location-name > svg:last-child { margin-left: auto; color: #a3979b; }
+.location-coords { padding-left: 24px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.location-summary { padding-left: 24px; font-size: 11px; color: var(--brand); }
+.directory-footer { display: flex; align-items: center; gap: 8px; padding: 16px 20px; font-size: 10px; color: var(--muted); border-top: 1px solid var(--line); }
+.empty-message { color: var(--muted); padding: 30px 22px; font-size: 13px; text-align: center; }
+.count-badge { padding: 3px 8px; background: var(--brand-soft); color: var(--brand); border-radius: 6px; font-size: 11px; }
+@media (max-width: 1000px) and (min-width: 761px) { .location-panel { width: 300px; flex-basis: 300px; } .directory-intro { padding: 24px 22px; } }
+@media (max-width: 760px) {
+  .location-panel { width: 100%; flex: 0 0 auto; border-right: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; max-height: 56%; }
+  .directory-intro, .directory-footer { display: none; }
+  .panel-toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; background: #fff; color: var(--ink); border: 0; padding: 18px 20px; border-radius: 16px 16px 0 0; font-size: 13px; font-weight: 600; }
+  .panel-toggle > span { display: flex; align-items: center; gap: 10px; }
+  .collapsed .panel-content { display: none; }
+  .expanded .panel-toggle > svg { transform: rotate(180deg); }
+  .panel-content { padding: 0; }
+  .locations-list { min-height: 0; }
+  .location-button { padding: 12px; }
 }
 
-.location-panel.collapsed {
-  width: auto;
-}
-
-.location-panel.expanded {
-  width: 350px;
-}
-
-.panel-toggle {
-  width: 100%;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #8B0000 0%, #5C0000 100%);
-  color: white;
-  border: none;
-  border-radius: 8px 8px 0 0;
-  cursor: pointer;
-  font-size: 1em;
-  font-weight: 600;
-  transition: background 0.2s;
-  text-align: left;
-}
-
-.location-panel.expanded .panel-toggle {
-  border-radius: 8px 8px 0 0;
-}
-
-.panel-toggle:hover {
-  background: linear-gradient(135deg, #A52A2A 0%, #7B0000 100%);
-}
-
-.panel-content {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 8px 0;
-}
-
-.location-search-wrap {
-  padding: 8px 12px 12px;
-}
-
-.location-search {
-  width: 100%;
-  border: 1px solid #e4d6d6;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 0.9em;
-}
-
-.location-search:focus {
-  outline: none;
-  border-color: #8b0000;
-  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.08);
-}
-
-.empty-message {
-  padding: 16px;
-  color: #999;
-  font-size: 0.9em;
-  text-align: center;
-}
-
-.locations-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.location-item {
-  border-bottom: 1px solid #eee;
-}
-
-.location-item:last-child {
-  border-bottom: none;
-}
-
-.location-button {
-  width: 100%;
-  padding: 12px 16px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  transition: background-color 0.2s;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.location-button:hover {
-  background-color: #f5f5f5;
-}
-
-.location-name {
-  font-weight: 600;
-  color: #333;
-  font-size: 0.95em;
-}
-
-.location-coords {
-  font-size: 0.8em;
-  color: #999;
-}
-
-.researcher-count {
-  font-size: 0.8em;
-  color: #667eea;
-  font-weight: 500;
-}
-
-.location-summary {
-  font-size: 0.82em;
-  color: #8b0000;
-  font-weight: 500;
-}
-
-/* Scrollbar styling */
-.panel-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.panel-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.panel-content::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.panel-content::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
+@media (max-width: 760px) { .location-search { font-size: 16px; } }
