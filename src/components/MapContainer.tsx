@@ -41,6 +41,21 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   });
   const mapRef = React.useRef<MapRef | null>(null);
 
+  const centerLocation = (location: ResearchLocation, zoom: number) => {
+    // Clear padding left by fitBounds so the coordinate uses the canvas center.
+    mapRef.current?.stop();
+    mapRef.current?.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
+    setViewState((prev) => ({
+      ...prev,
+      longitude: location.longitude,
+      latitude: location.latitude,
+      zoom,
+      pitch: 70,
+      bearing: 40,
+      padding: { top: 0, bottom: 0, left: 0, right: 0 },
+    }));
+  };
+
   useEffect(() => {
     setHighlightedLocationIds([]);
     setPopupInfo(null);
@@ -226,14 +241,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       return;
     }
 
-    setViewState((prev) => ({
-      ...prev,
-      longitude: location.longitude,
-      latitude: location.latitude,
-      zoom: 12,
-      pitch: 70,
-      bearing: 40,
-    }));
+    centerLocation(location, 12);
     setPopupInfo(location);
     setHighlightedLocationIds([location.id]);
     setActiveResearchId(null);
@@ -331,14 +339,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
     if (targetLocations.length === 1) {
       const [location] = targetLocations;
-      setViewState((prev) => ({
-        ...prev,
-        longitude: location.longitude,
-        latitude: location.latitude,
-        zoom: 11.5,
-        pitch: 70,
-        bearing: 40,
-      }));
+      centerLocation(location, 11.5);
       return;
     }
 
@@ -556,10 +557,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
               key={location.id}
               longitude={location.longitude}
               latitude={location.latitude}
+              anchor="center"
             >
               <button
                 className={`marker-button ${isSelected ? 'selected' : ''}`}
-                onClick={() => setPopupInfo(location)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  centerLocation(location, Math.max(viewState.zoom, 12));
+                  setPopupInfo(location);
+                }}
                 title={location.name}
               >
                 <div className={`marker ${isSelected ? 'marker-selected' : ''}`}>
