@@ -2,7 +2,7 @@ import type { ResearchEntry, ResearchLocation } from '../types/research';
 
 const EXPORT_MAP_STYLE = 'mapbox://styles/mapbox/streets-v12';
 // Keep each export close to the location whose Export button was clicked.
-const EXPORT_MAP_CAMERA = { zoom: 18, pitch: 70, bearing: 40 };
+const EXPORT_MAP_CAMERA = { zoom: 18, pitch: 0, bearing: 0 };
 
 function escapeHtml(value: string) {
   return value
@@ -254,10 +254,43 @@ function buildExportHtml(
                var printed = false;
                var mapLoaded = false;
                var locations = ${mapLocationsJson};
+               var markers = [];
                var errorNode = document.getElementById('export-map-error');
 
                function triggerPrint() {
                  if (printed) return;
+                 // Freeze the map and markers in one image before print layout changes.
+                 if (mapLoaded) {
+                   var source = map.getCanvas();
+                   var snapshot = document.createElement('canvas');
+                   snapshot.width = source.width;
+                   snapshot.height = source.height;
+                   var context = snapshot.getContext('2d');
+                   var bounds = map.getContainer().getBoundingClientRect();
+                   context.drawImage(source, 0, 0);
+                   context.scale(source.width / bounds.width, source.height / bounds.height);
+                   markers.forEach(function (entry) {
+                     var rect = entry.element.getBoundingClientRect();
+                     var x = rect.left - bounds.left + rect.width / 2;
+                     var y = rect.top - bounds.top + rect.height / 2;
+                     context.beginPath();
+                     context.arc(x, y, 12, 0, Math.PI * 2);
+                     context.fillStyle = '#8b0000';
+                     context.fill();
+                     context.strokeStyle = '#fff';
+                     context.lineWidth = 4;
+                     context.stroke();
+                     context.font = 'bold 12px Georgia';
+                     context.lineWidth = 4;
+                     context.strokeText(entry.name, x + 20, y + 4);
+                     context.fillText(entry.name, x + 20, y + 4);
+                   });
+                   var image = document.createElement('img');
+                   image.src = snapshot.toDataURL('image/png');
+                   image.style.cssText = 'display:block;width:100%;height:100%;';
+                   map.getContainer().replaceWith(image);
+                   map.remove();
+                 }
                  printed = true;
                  window.focus();
                  window.print();
@@ -484,6 +517,7 @@ function buildExportHtml(
 
                      markerWrapper.appendChild(markerNode);
                      markerWrapper.appendChild(labelNode);
+                     markers.push({ element: markerWrapper, name: location.name });
 
                      new mapboxgl.Marker({ element: markerWrapper, anchor: 'center' })
                        .setLngLat([location.longitude, location.latitude])
@@ -493,11 +527,6 @@ function buildExportHtml(
                    map.resize();
                    map.jumpTo({ center: [${currentLocation.longitude}, ${currentLocation.latitude}] });
                    map.once('idle', triggerPrint);
-                 });
-
-                 window.addEventListener('beforeprint', function () {
-                   map.resize();
-                   map.jumpTo({ center: [${currentLocation.longitude}, ${currentLocation.latitude}] });
                  });
 
                  map.on('error', function () {
@@ -615,8 +644,13 @@ export async function exportResearchMapJpg(
     context.fillStyle = '#fff';
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(exportMap.getCanvas(), 0, 0, canvas.width, canvas.height);
+    // project() returns CSS pixels, independently of the WebGL pixel ratio.
+    const mapBounds = container.getBoundingClientRect();
+    const scaleX = canvas.width / mapBounds.width;
+    const scaleY = canvas.height / mapBounds.height;
     related.forEach((location) => {
-      const point = exportMap.project([location.longitude, location.latitude]);
+      const projected = exportMap.project([location.longitude, location.latitude]);
+      const point = { x: projected.x * scaleX, y: projected.y * scaleY };
       context.beginPath();
       context.arc(point.x, point.y, 12, 0, Math.PI * 2);
       context.fillStyle = '#8b0000';
