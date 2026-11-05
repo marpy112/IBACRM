@@ -1,7 +1,7 @@
 .researcher-management { width: 100%; }
 .researcher-management > p { margin: 12px 0 24px; color: var(--muted); line-height: 1.6; }
 .researcher-profile-search { display: grid; gap: 8px; margin-bottom: 24px; max-width: 480px; font-size: 13px; }
-.researcher-management input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; width: 100%; background: white; }
+.researcher-management input, .researcher-management select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; width: 100%; background: white; }
 .researcher-management-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .researcher-profile-editor { padding: 24px; background: white; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
 .researcher-profile-study { font-weight: 600; line-height: 1.5; color: var(--brand-dark); margin-bottom: 20px; overflow-wrap: anywhere; }

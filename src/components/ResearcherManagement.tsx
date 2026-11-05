@@ -68,9 +68,11 @@ export function ResearcherManagement({ locations, onUpdated }: {
   onUpdated: (locations: ResearchLocation[]) => void;
 }) {
   const [query, setQuery] = useState('');
+  const [selectedKey, setSelectedKey] = useState('');
   const studies = useMemo(() => [...new Map(locations.flatMap((location) => location.researches).map((study) => [study.id, study])).values()], [locations]);
   const profiles = studies.flatMap((study) => study.researchers.map((researcher, index) => ({ study, researcher, index })))
     .filter(({ study, researcher }) => `${study.title} ${researcher.name}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const selected = profiles.find(({ study, index }) => `${study.id}-${index}` === selectedKey);
   return (
     <section className="researcher-management">
       <h2>Researcher profiles</h2>
@@ -78,9 +80,15 @@ export function ResearcherManagement({ locations, onUpdated }: {
       <label className="researcher-profile-search">Find a researcher or study
         <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name or study title" />
       </label>
-      <div className="researcher-management-grid">
-        {profiles.map(({ study, index }) => <ResearcherProfileEditor key={`${study.id}-${index}`} study={study} index={index} onUpdated={onUpdated} />)}
-      </div>
+      <label className="researcher-profile-search">Choose researcher
+        <select value={selected ? selectedKey : ''} onChange={(event) => setSelectedKey(event.target.value)}>
+          <option value="">Select a researcher to load their photo and details</option>
+          {profiles.map(({ study, researcher, index }) => (
+            <option key={`${study.id}-${index}`} value={`${study.id}-${index}`}>{researcher.name} — {study.title}</option>
+          ))}
+        </select>
+      </label>
+      {selected && <ResearcherProfileEditor key={selectedKey} study={selected.study} index={selected.index} onUpdated={onUpdated} />}
       {profiles.length === 0 && <p>No researchers found. Add researchers to a study in Research &amp; locations.</p>}
     </section>
   );

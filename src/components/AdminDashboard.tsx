@@ -62,6 +62,9 @@ export default function AdminDashboard({
   const [editorTab, setEditorTab] = useState<'location' | 'study'>('location');
   const studies = useMemo(() => [...new Map(locations.flatMap((location) => location.researches).map((research) => [research.id, research])).values()], [locations]);
   const researcherCount = new Set(studies.flatMap((research) => research.researchers.map((researcher) => researcher.name.trim().toLowerCase()))).size;
+  const savedResearcherProfiles = useMemo(() => studies.flatMap((study) =>
+    study.researchers.map((profile, index) => ({ key: `${study.id}-${index}`, profile, title: study.title }))
+  ), [studies]);
   const [locationForm, setLocationForm] = useState<LocationFormState>(EMPTY_LOCATION_FORM);
   const [researchForm, setResearchForm] = useState<ResearchFormState>(EMPTY_RESEARCH_FORM);
   const [error, setError] = useState('');
@@ -494,6 +497,24 @@ export default function AdminDashboard({
                     <div className="researchers-stack">
                       {researchForm.researchers.map((researcher, index) => (
                         <div className="researcher-row" key={`researcher-${index}`}>
+                          <label className="researcher-photo-field">
+                            <span>Fill from an existing researcher</span>
+                            <select defaultValue="" disabled={processingPhotos > 0}
+                              aria-label={`Choose an existing profile for researcher ${index + 1}`}
+                              onChange={(event) => {
+                                const saved = savedResearcherProfiles.find((entry) => entry.key === event.target.value);
+                                if (saved) setResearchForm((previous) => ({
+                                  ...previous,
+                                  researchers: previous.researchers.map((entry, currentIndex) => currentIndex === index ? { ...saved.profile } : entry),
+                                }));
+                                event.target.value = '';
+                              }}>
+                              <option value="">Select researcher to autofill</option>
+                              {savedResearcherProfiles.map((entry) => (
+                                <option key={entry.key} value={entry.key}>{entry.profile.name} — {entry.title}</option>
+                              ))}
+                            </select>
+                          </label>
                           <label className="researcher-photo-field">
                             <span>2×2 picture</span>
                             {researcher.photo ? <img src={researcher.photo} alt={`Photo of ${researcher.name || `researcher ${index + 1}`}`} /> : <span className="researcher-photo-placeholder">No photo</span>}
